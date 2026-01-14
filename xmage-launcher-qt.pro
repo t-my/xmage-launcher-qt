@@ -46,5 +46,12 @@ macx {
     # Deploy Qt frameworks and sign the app bundle
     QMAKE_POST_LINK += macdeployqt $${TARGET}.app && codesign --force --deep --sign - $${TARGET}.app
 }
-linux: LIBS += -lzip
+linux {
+    LIBS += -lzip
+
+    # AppImage target: run "make appimage" after building
+    appimage.commands = $$PWD/packaging/linux/build-appimage.sh
+    appimage.depends = $(TARGET)
+    QMAKE_EXTRA_TARGETS += appimage
+}
 win32: LIBS += -lzip -lbz2 -llzma -lmsi

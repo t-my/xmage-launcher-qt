@@ -41,6 +41,14 @@ MainWindow::MainWindow(QWidget *parent)
     appDir.cdUp(); // .app
     appDir.cdUp(); // folder containing .app
     javaDownloadPath = appDir.absolutePath();
+#elif defined(Q_OS_LINUX)
+    // On Linux, check if running from an AppImage (which mounts to read-only /tmp)
+    QString appImagePath = qEnvironmentVariable("APPIMAGE");
+    if (!appImagePath.isEmpty())
+    {
+        QFileInfo appImageInfo(appImagePath);
+        javaDownloadPath = appImageInfo.absolutePath();
+    }
 #endif
 }
 

@@ -76,3 +76,7 @@ Thumbs.db
 java
 xmage
 
+## Build output
+build/
+*.AppImage
+
