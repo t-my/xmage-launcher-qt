@@ -1,0 +1,52 @@
+name: Build macOS App
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install qt libzip
+
+      - name: Build application
+        run: |
+          mkdir build
+          cd build
+          qmake ..
+          make -j$(sysctl -n hw.ncpu)
+
+      - name: Deploy Qt frameworks
+        run: |
+          cd build
+          macdeployqt xmage-launcher-qt.app
+
+      - name: Code sign
+        run: |
+          cd build
+          codesign --force --deep --sign - xmage-launcher-qt.app
+
+      - name: Create distribution zip
+        run: |
+          mkdir -p dist
+          cp -R build/xmage-launcher-qt.app dist/
+          mkdir -p dist/java
+          mkdir -p dist/xmage
+          cd dist
+          zip -r -q ../macos.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-app
+          path: macos.zip
