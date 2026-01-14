@@ -11,7 +11,7 @@
 #   ./packaging/linux/build-appimage.sh
 #
 # Output:
-#   XMage_Launcher-x86_64.AppImage in the project root
+#   linux.zip containing the AppImage and empty java/ and xmage/ folders
 
 set -e
 
@@ -129,10 +129,27 @@ echo ""
 
 # Step 7: Create AppImage
 echo "=== Step 7: Creating AppImage ==="
-OUTPUT="$PROJECT_ROOT/XMage_Launcher-x86_64.AppImage"
-"$APPIMAGETOOL" "$APPDIR" "$OUTPUT"
+APPIMAGE_OUTPUT="$BUILD_DIR/XMage_Launcher-x86_64.AppImage"
+"$APPIMAGETOOL" "$APPDIR" "$APPIMAGE_OUTPUT"
+echo "AppImage created"
+echo ""
 
+# Step 8: Create distribution folder with AppImage and empty folders
+echo "=== Step 8: Creating distribution ==="
+DIST_DIR="$BUILD_DIR/dist"
+rm -rf "$DIST_DIR"
+mkdir -p "$DIST_DIR"
+cp "$APPIMAGE_OUTPUT" "$DIST_DIR/"
+mkdir -p "$DIST_DIR/java"
+mkdir -p "$DIST_DIR/xmage"
+echo "Distribution folder created with empty java/ and xmage/ folders"
+echo ""
+
+# Step 9: Create zip file
+echo "=== Step 9: Creating linux.zip ==="
+cd "$DIST_DIR"
+zip -r -q "$PROJECT_ROOT/linux.zip" .
 echo ""
 echo "=== Build complete ==="
-echo "Output: $OUTPUT"
-ls -lh "$OUTPUT"
+echo "Output: $PROJECT_ROOT/linux.zip"
+ls -lh "$PROJECT_ROOT/linux.zip"

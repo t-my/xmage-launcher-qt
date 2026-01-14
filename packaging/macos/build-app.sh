@@ -11,8 +11,8 @@
 #   ./packaging/macos/build-app.sh
 #
 # Output:
-#   XMage_Launcher.app in the project root
-#   XMage_Launcher.dmg (optional disk image)
+#   macos.zip containing the app bundle and empty java/ and xmage/ folders
+#   XMage_Launcher.dmg (optional, with --dmg flag)
 
 set -e
 
@@ -77,17 +77,28 @@ codesign --force --deep --sign - "$APP_BUNDLE"
 echo "App bundle signed (ad-hoc)"
 echo ""
 
-# Step 4: Copy to project root
-echo "=== Step 4: Copying app bundle ==="
-OUTPUT_APP="$PROJECT_ROOT/XMage_Launcher.app"
-rm -rf "$OUTPUT_APP"
-cp -R "$APP_BUNDLE" "$OUTPUT_APP"
-echo "Output: $OUTPUT_APP"
+# Step 4: Create distribution folder with app and empty folders
+echo "=== Step 4: Creating distribution ==="
+DIST_DIR="$BUILD_DIR/dist"
+rm -rf "$DIST_DIR"
+mkdir -p "$DIST_DIR"
+cp -R "$APP_BUNDLE" "$DIST_DIR/"
+mkdir -p "$DIST_DIR/java"
+mkdir -p "$DIST_DIR/xmage"
+echo "Distribution folder created with empty java/ and xmage/ folders"
 echo ""
 
-# Step 5: Optionally create DMG
+# Step 5: Create zip file
+echo "=== Step 5: Creating macos.zip ==="
+cd "$DIST_DIR"
+zip -r -q "$PROJECT_ROOT/macos.zip" .
+echo "Output: $PROJECT_ROOT/macos.zip"
+ls -lh "$PROJECT_ROOT/macos.zip"
+echo ""
+
+# Step 6: Optionally create DMG
 if [ "$1" = "--dmg" ]; then
-    echo "=== Step 5: Creating DMG ==="
+    echo "=== Step 6: Creating DMG ==="
     DMG_NAME="XMage_Launcher.dmg"
     DMG_PATH="$PROJECT_ROOT/$DMG_NAME"
 
@@ -98,7 +109,7 @@ if [ "$1" = "--dmg" ]; then
     DMG_TEMP="$BUILD_DIR/dmg_temp"
     rm -rf "$DMG_TEMP"
     mkdir -p "$DMG_TEMP"
-    cp -R "$OUTPUT_APP" "$DMG_TEMP/"
+    cp -R "$DIST_DIR"/* "$DMG_TEMP/"
     ln -s /Applications "$DMG_TEMP/Applications"
 
     # Create DMG
@@ -111,4 +122,4 @@ fi
 
 echo ""
 echo "=== Build complete ==="
-ls -lh "$OUTPUT_APP"
+echo "Output: $PROJECT_ROOT/macos.zip"

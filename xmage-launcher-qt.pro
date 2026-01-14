@@ -43,6 +43,7 @@ RESOURCES += \
 macx {
     INCLUDEPATH += /opt/homebrew/opt/libzip/include
     LIBS += -L/opt/homebrew/opt/libzip/lib -lzip
+    ICON = resources/icon-mage.icns
 
     # Automatically deploy Qt frameworks and sign the app bundle after build
     QMAKE_POST_LINK += macdeployqt $${TARGET}.app && codesign --force --deep --sign - $${TARGET}.app
