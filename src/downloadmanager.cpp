@@ -129,7 +129,10 @@ void DownloadManager::startDownload(QUrl url, QNetworkReply *reply)
     QString fileName;
     if (!downloadLocation.isEmpty())
     {
-        fileName.append(downloadLocation + '/');
+        // Create version subfolder: downloadLocation/version/
+        QString versionDir = downloadLocation + '/' + newVersion.version;
+        QDir().mkpath(versionDir);
+        fileName.append(versionDir + '/');
     }
     fileName.append(newVersion.version + ".zip");
     saveFile = new QSaveFile(fileName);
@@ -145,7 +148,8 @@ void DownloadManager::startDownload(QUrl url, QNetworkReply *reply)
         networkManager->disconnect();
         connect(networkManager, &QNetworkAccessManager::finished, this, &DownloadManager::download_complete);
         QNetworkRequest request(url);
-        request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+        request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                             QNetworkRequest::NoLessSafeRedirectPolicy);
         downloadReply = networkManager->get(request);
         connect(downloadReply, &QNetworkReply::downloadProgress, mainWindow, &MainWindow::update_progress_bar);
         connect(downloadReply, &QNetworkReply::readyRead, this, &DownloadManager::save_data);

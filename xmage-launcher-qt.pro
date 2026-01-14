@@ -11,7 +11,6 @@ CONFIG += c++11
 SOURCES += \
     src/aboutdialog.cpp \
     src/downloadmanager.cpp \
-    src/javadialog.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
     src/settings.cpp \
@@ -22,7 +21,6 @@ SOURCES += \
 HEADERS += \
     src/aboutdialog.h \
     src/downloadmanager.h \
-    src/javadialog.h \
     src/mainwindow.h \
     src/settings.h \
     src/settingsdialog.h \
@@ -32,7 +30,6 @@ HEADERS += \
 FORMS += \
     forms/mainwindow.ui \
     forms/settingsdialog.ui \
-    forms/javadialog.ui \
     forms/aboutdialog.ui
 
 # Default rules for deployment.
@@ -43,5 +40,11 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 RESOURCES += \
     resources/resources.qrc
 
-unix|win32: LIBS += -lzip
-win32: LIBS += -lbz2 -llzma -lmsi
+macx {
+    INCLUDEPATH += /opt/homebrew/opt/libzip/include
+    LIBS += -L/opt/homebrew/opt/libzip/lib -lzip
+    # Deploy Qt frameworks and sign the app bundle
+    QMAKE_POST_LINK += macdeployqt $${TARGET}.app && codesign --force --deep --sign - $${TARGET}.app
+}
+linux: LIBS += -lzip
+win32: LIBS += -lzip -lbz2 -llzma -lmsi
