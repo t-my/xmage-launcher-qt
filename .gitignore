@@ -79,4 +79,6 @@ xmage
 ## Build output
 build/
 *.AppImage
+*.dmg
+XMage_Launcher.app/
 

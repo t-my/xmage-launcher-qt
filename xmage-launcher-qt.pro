@@ -43,8 +43,14 @@ RESOURCES += \
 macx {
     INCLUDEPATH += /opt/homebrew/opt/libzip/include
     LIBS += -L/opt/homebrew/opt/libzip/lib -lzip
-    # Deploy Qt frameworks and sign the app bundle
+
+    # Automatically deploy Qt frameworks and sign the app bundle after build
     QMAKE_POST_LINK += macdeployqt $${TARGET}.app && codesign --force --deep --sign - $${TARGET}.app
+
+    # DMG target: run "make dmg" to create disk image
+    dmg.commands = $$PWD/packaging/macos/build-app.sh --dmg
+    dmg.depends = $(TARGET)
+    QMAKE_EXTRA_TARGETS += dmg
 }
 linux {
     LIBS += -lzip
