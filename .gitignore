@@ -82,3 +82,7 @@ build/
 *.dmg
 XMage_Launcher.app/
 
+
+# Build artifacts
+xmage-launcher-qt
+*.zip

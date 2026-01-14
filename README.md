@@ -8,9 +8,9 @@ The goal is to make it easier for users to get started without requiring Java to
 ## For Users
 **Windows:** Statically linked binaries for Windows will be available on the [releases page](https://github.com/weirddan455/xmage-launcher-qt/releases). Simply download and run the .exe file. No external dependencies are required.
 
-**Linux:** For now, follow the build instructions below.
+**Linux:** Download the AppImage from the [releases page](https://github.com/weirddan455/xmage-launcher-qt/releases), make it executable (`chmod +x`), and run it.
 
-**macOS:** Follow the build instructions below. The build process automatically bundles Qt frameworks and signs the app.
+**macOS:** Download the DMG from the [releases page](https://github.com/weirddan455/xmage-launcher-qt/releases), open it, and drag the app to Applications.
 
 ## For Developers
 ### Linux
@@ -18,41 +18,59 @@ First, you will need to install some prerequisites:
 
 Arch Linux:
 ```
-sudo pacman -S base-devel git qt5-base qt5-tools libzip --needed
+sudo pacman -S base-devel git qt6-base libzip curl --needed
 ```
 
 Ubuntu:
 ```
-sudo apt install build-essential git qtbase5-dev libzip-dev
+sudo apt install build-essential git qt6-base-dev libzip-dev curl
 ```
 
-Qt Creator can optionally be installed and used as an IDE.  It's in both Arch and Ubuntu repos as "qtcreator"
+Qt Creator can optionally be installed and used as an IDE. It's in both Arch and Ubuntu repos as "qtcreator".
 
-To build from the command line:
+#### Building from the command line
 
 ```
 git clone https://github.com/weirddan455/xmage-launcher-qt.git
-mkdir build
-cd build
-qmake ../xmage-launcher-qt
+cd xmage-launcher-qt
+mkdir build && cd build
+qmake6 ..
 make
 ```
+
+#### Creating an AppImage for distribution
+
+```
+./packaging/linux/build-appimage.sh
+```
+
+This creates `XMage_Launcher-x86_64.AppImage` in the project root. The script handles building, bundling Qt libraries, and packaging automatically.
 
 ### macOS
 Install prerequisites using Homebrew:
 ```
-brew install qt libzip
+brew install qt6 libzip
 ```
 
-To build:
+#### Building from the command line
+
 ```
 git clone https://github.com/weirddan455/xmage-launcher-qt.git
 cd xmage-launcher-qt
-qmake
+mkdir build && cd build
+qmake6 ..
 make
 ```
 
 The build automatically runs `macdeployqt` to bundle Qt frameworks and `codesign` to sign the app. The resulting `xmage-launcher-qt.app` can be run directly or moved to `/Applications`.
+
+#### Creating a DMG for distribution
+
+```
+./packaging/macos/build-app.sh --dmg
+```
+
+This creates `XMage_Launcher.dmg` in the project root.
 
 ### Windows
 The easiest way I've found to set up a build enviornment in Windows is to use MSYS2.  Download and run the installer from their website: https://www.msys2.org/

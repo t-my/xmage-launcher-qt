@@ -46,18 +46,8 @@ macx {
 
     # Automatically deploy Qt frameworks and sign the app bundle after build
     QMAKE_POST_LINK += macdeployqt $${TARGET}.app && codesign --force --deep --sign - $${TARGET}.app
-
-    # DMG target: run "make dmg" to create disk image
-    dmg.commands = $$PWD/packaging/macos/build-app.sh --dmg
-    dmg.depends = $(TARGET)
-    QMAKE_EXTRA_TARGETS += dmg
 }
 linux {
     LIBS += -lzip
-
-    # AppImage target: run "make appimage" after building
-    appimage.commands = $$PWD/packaging/linux/build-appimage.sh
-    appimage.depends = $(TARGET)
-    QMAKE_EXTRA_TARGETS += appimage
 }
 win32: LIBS += -lzip -lbz2 -llzma -lmsi

@@ -28,6 +28,7 @@ echo ""
 
 # Step 1: Build the application
 echo "=== Step 1: Building application ==="
+rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
