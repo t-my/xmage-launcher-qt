@@ -1,0 +1,131 @@
+name: Build Linux AppImage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            qt6-base-dev \
+            libqt6network6 \
+            libzip-dev \
+            libgl1-mesa-dev \
+            libxkbcommon-dev \
+            libxcb-cursor0 \
+            fuse \
+            file
+
+      - name: Build application
+        run: |
+          mkdir build
+          cd build
+          qmake6 ..
+          make -j$(nproc)
+          strip xmage-launcher-qt
+
+      - name: Create AppDir structure
+        run: |
+          mkdir -p build/AppDir/usr/bin
+          mkdir -p build/AppDir/usr/lib
+          mkdir -p build/AppDir/usr/plugins/platforms
+          mkdir -p build/AppDir/usr/plugins/tls
+          mkdir -p build/AppDir/usr/plugins/xcbglintegrations
+          mkdir -p build/AppDir/usr/share/applications
+          mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
+
+          # Copy binary
+          cp build/xmage-launcher-qt build/AppDir/usr/bin/
+
+          # Copy desktop file and icon
+          cp packaging/linux/xmage-launcher-qt.desktop build/AppDir/usr/share/applications/
+          cp resources/icon-mage.png build/AppDir/usr/share/icons/hicolor/256x256/apps/xmage-launcher-qt.png
+
+      - name: Copy Qt libraries
+        run: |
+          # Copy Qt6 libraries
+          cp /usr/lib/x86_64-linux-gnu/libQt6Core.so.6 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libQt6Gui.so.6 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libQt6Widgets.so.6 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libQt6Network.so.6 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libQt6DBus.so.6 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libQt6OpenGL.so.6 build/AppDir/usr/lib/ || true
+
+          # Copy other required libraries
+          cp /usr/lib/x86_64-linux-gnu/libzip.so.4 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libdouble-conversion.so.3 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libb2.so.1 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libpcre2-16.so.0 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libmd4c.so.0 build/AppDir/usr/lib/
+
+          # Copy SSL libraries
+          cp /usr/lib/x86_64-linux-gnu/libssl.so.3 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libcrypto.so.3 build/AppDir/usr/lib/
+
+      - name: Copy Qt plugins
+        run: |
+          # Platform plugins
+          cp /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms/libqxcb.so build/AppDir/usr/plugins/platforms/ || true
+          cp /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms/libqwayland*.so build/AppDir/usr/plugins/platforms/ 2>/dev/null || true
+
+          # XCB GL integrations
+          cp /usr/lib/x86_64-linux-gnu/qt6/plugins/xcbglintegrations/*.so build/AppDir/usr/plugins/xcbglintegrations/ 2>/dev/null || true
+
+          # TLS plugins
+          cp /usr/lib/x86_64-linux-gnu/qt6/plugins/tls/libqopensslbackend.so build/AppDir/usr/plugins/tls/ || true
+          cp /usr/lib/x86_64-linux-gnu/qt6/plugins/tls/libqcertonlybackend.so build/AppDir/usr/plugins/tls/ || true
+
+      - name: Create AppRun script
+        run: |
+          cat > build/AppDir/AppRun << 'EOF'
+          #!/bin/bash
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
+          export QT_PLUGIN_PATH="${HERE}/usr/plugins"
+          export QT_QPA_PLATFORM_PLUGIN_PATH="${HERE}/usr/plugins/platforms"
+          exec "${HERE}/usr/bin/xmage-launcher-qt" "$@"
+          EOF
+          chmod +x build/AppDir/AppRun
+
+          # Create symlinks
+          ln -sf usr/share/applications/xmage-launcher-qt.desktop build/AppDir/xmage-launcher-qt.desktop
+          ln -sf usr/share/icons/hicolor/256x256/apps/xmage-launcher-qt.png build/AppDir/xmage-launcher-qt.png
+          ln -sf usr/share/icons/hicolor/256x256/apps/xmage-launcher-qt.png build/AppDir/.DirIcon
+
+      - name: Download appimagetool
+        run: |
+          curl -L -o build/appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x build/appimagetool
+
+      - name: Create AppImage
+        run: |
+          cd build
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run AppDir XMage_Launcher-x86_64.AppImage
+
+      - name: Create distribution zip
+        run: |
+          mkdir -p dist
+          cp build/XMage_Launcher-x86_64.AppImage dist/
+          mkdir -p dist/java
+          mkdir -p dist/xmage
+          cd dist
+          zip -r ../linux.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: linux.zip
