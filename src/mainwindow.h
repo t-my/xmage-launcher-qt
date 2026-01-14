@@ -10,8 +10,13 @@
 #include <QInputDialog>
 #include <QStandardPaths>
 #include <QDesktopServices>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QSaveFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QProcess>
 #include "aboutdialog.h"
-#include "javadialog.h"
 #include "settingsdialog.h"
 #include "settings.h"
 #include "xmageprocess.h"
@@ -55,15 +60,29 @@ private slots:
     void on_actionWebsite_triggered();
     void server_finished();
 
+    // Java download slots
+    void onJavaConfigFetched(QNetworkReply *reply);
+    void onJavaDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+    void onJavaDownloadFinished(QNetworkReply *reply);
+    void onJavaDownloadReadyRead();
+
 private:
     Ui::MainWindow *ui;
     QLabel *background;
     Settings *settings;
     QPlainTextEdit *clientConsole;
     QPlainTextEdit *serverConsole;
-    JavaDialog *javaDialog;
     AboutDialog *aboutDialog;
     XMageProcess *serverProcess = nullptr;
+
+    // Java download members
+    QNetworkAccessManager *javaNetworkManager = nullptr;
+    QNetworkReply *javaDownloadReply = nullptr;
+    QSaveFile *javaSaveFile = nullptr;
+    QString javaBaseUrl;
+    QString javaVersion;
+    QString javaDownloadPath;
+    bool javaDownloading = false;
 
     bool validateJavaSettings();
     bool findClientJar(QString *jar);
@@ -71,5 +90,13 @@ private:
     void launchClient();
     void launchServer();
     void stopServer();
+
+    // Java download methods
+    void fetchJavaConfig();
+    void startJavaDownload();
+    QString getJavaPlatformSuffix();
+    void extractJava(const QString &filePath);
+    void javaDownloadComplete();
+    void javaDownloadFailed(const QString &error);
 };
 #endif // MAINWINDOW_H

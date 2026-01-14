@@ -6,11 +6,11 @@ The goal is to make it easier for users to get started without requiring Java to
 ![Screenshot](/screenshots/launcher.jpg?raw=true)
 
 ## For Users
-Windows: Statically linked binaries for Windows will be available on the [releases page](https://github.com/weirddan455/xmage-launcher-qt/releases).  Simply download and run the .exe file.  No external dependencies are required.  Requires at least Windows 7 32 bit as per Qt5 system requirments (may run on earlier versions of Windows but this has not been tested.)
+**Windows:** Statically linked binaries for Windows will be available on the [releases page](https://github.com/weirddan455/xmage-launcher-qt/releases). Simply download and run the .exe file. No external dependencies are required.
 
-Linux: For now, follow the build instructions below.  I am looking into getting this into the AUR for Arch Linux users and possibly providing an Ubuntu package as well for easier installation.
+**Linux:** For now, follow the build instructions below.
 
-Mac OSX: I do not have a Mac to test on.  It should compile and run under OSX but I don't know enough about Mac build environments to provide specfic instructions.  If you're a tech savy Mac user, please test and open an issue if you have problems.
+**macOS:** Follow the build instructions below. The build process automatically bundles Qt frameworks and signs the app.
 
 ## For Developers
 ### Linux
@@ -37,6 +37,22 @@ cd build
 qmake ../xmage-launcher-qt
 make
 ```
+
+### macOS
+Install prerequisites using Homebrew:
+```
+brew install qt libzip
+```
+
+To build:
+```
+git clone https://github.com/weirddan455/xmage-launcher-qt.git
+cd xmage-launcher-qt
+qmake
+make
+```
+
+The build automatically runs `macdeployqt` to bundle Qt frameworks and `codesign` to sign the app. The resulting `xmage-launcher-qt.app` can be run directly or moved to `/Applications`.
 
 ### Windows
 The easiest way I've found to set up a build enviornment in Windows is to use MSYS2.  Download and run the installer from their website: https://www.msys2.org/
