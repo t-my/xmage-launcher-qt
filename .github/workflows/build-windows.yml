@@ -1,0 +1,95 @@
+name: Build Windows
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-qt6-base
+            mingw-w64-x86_64-qt6-tools
+            mingw-w64-x86_64-libzip
+            make
+            zip
+
+      - name: Build application
+        run: |
+          mkdir build
+          cd build
+          qmake6 ..
+          make -j$(nproc)
+          strip release/xmage-launcher-qt.exe
+
+      - name: Deploy Qt libraries
+        run: |
+          cd build/release
+          windeployqt xmage-launcher-qt.exe
+
+      - name: Create distribution zip
+        run: |
+          mkdir -p dist
+          cp build/release/xmage-launcher-qt.exe dist/
+          cp build/release/*.dll dist/ 2>/dev/null || true
+          cp -r build/release/platforms dist/ 2>/dev/null || true
+          cp -r build/release/styles dist/ 2>/dev/null || true
+          cp -r build/release/tls dist/ 2>/dev/null || true
+          cp -r build/release/imageformats dist/ 2>/dev/null || true
+          # Copy MinGW runtime DLLs
+          cp /mingw64/bin/libgcc_s_seh-1.dll dist/
+          cp /mingw64/bin/libstdc++-6.dll dist/
+          cp /mingw64/bin/libwinpthread-1.dll dist/
+          # Copy libzip and its dependencies
+          cp /mingw64/bin/libzip.dll dist/
+          cp /mingw64/bin/zlib1.dll dist/
+          cp /mingw64/bin/libbz2-1.dll dist/
+          cp /mingw64/bin/liblzma-5.dll dist/
+          cp /mingw64/bin/libzstd.dll dist/
+          cp /mingw64/bin/libnettle-8.dll dist/
+          cp /mingw64/bin/libgnutls-30.dll dist/ 2>/dev/null || true
+          # Copy Qt dependencies not handled by windeployqt
+          cp /mingw64/bin/libdouble-conversion.dll dist/
+          cp /mingw64/bin/libb2-1.dll dist/
+          cp /mingw64/bin/libpcre2-16-0.dll dist/
+          cp /mingw64/bin/libpcre2-8-0.dll dist/
+          cp /mingw64/bin/libharfbuzz-0.dll dist/
+          cp /mingw64/bin/libpng16-16.dll dist/
+          cp /mingw64/bin/libjpeg-8.dll dist/
+          cp /mingw64/bin/libfreetype-6.dll dist/
+          cp /mingw64/bin/libbrotlidec.dll dist/
+          cp /mingw64/bin/libbrotlicommon.dll dist/
+          cp /mingw64/bin/libglib-2.0-0.dll dist/
+          cp /mingw64/bin/libintl-8.dll dist/
+          cp /mingw64/bin/libiconv-2.dll dist/
+          cp /mingw64/bin/libgraphite2.dll dist/
+          cp /mingw64/bin/libmd4c.dll dist/
+          # Copy ICU libraries
+          cp /mingw64/bin/libicuin*.dll dist/
+          cp /mingw64/bin/libicuuc*.dll dist/
+          cp /mingw64/bin/libicudt*.dll dist/
+          mkdir -p dist/java
+          mkdir -p dist/xmage
+          cd dist
+          zip -r -q ../windows.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-app
+          path: windows.zip
