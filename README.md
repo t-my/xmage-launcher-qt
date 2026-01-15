@@ -8,9 +8,9 @@ A lightweight, cross-platform launcher for [XMage](https://github.com/magefree/m
 
 | Platform | Download |
 |----------|----------|
-| Windows | [xmage-launcher-qt.zip](https://github.com/t-my/xmage-launcher-qt/releases/latest/download/windows.zip) |
-| macOS | [XMage_Launcher.dmg](https://github.com/t-my/xmage-launcher-qt/releases/latest/download/macos.zip) |
-| Linux | [XMage_Launcher.AppImage](https://github.com/t-my/xmage-launcher-qt/releases/latest/download/linux.zip) |
+| Windows | [windows.zip](https://github.com/t-my/xmage-launcher-qt/releases/latest/download/windows.zip) |
+| macOS | [macos.zip](https://github.com/t-my/xmage-launcher-qt/releases/latest/download/macos.zip) |
+| Linux | [linux.zip](https://github.com/t-my/xmage-launcher-qt/releases/latest/download/linux.zip) |
 
 All releases are available on the [releases page](https://github.com/t-my/xmage-launcher-qt/releases).
 
