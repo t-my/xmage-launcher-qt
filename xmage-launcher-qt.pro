@@ -11,6 +11,7 @@ CONFIG += c++11
 SOURCES += \
     src/aboutdialog.cpp \
     src/downloadmanager.cpp \
+    src/zipextractthread.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
     src/settings.cpp \
@@ -21,6 +22,7 @@ SOURCES += \
 HEADERS += \
     src/aboutdialog.h \
     src/downloadmanager.h \
+    src/zipextractthread.h \
     src/mainwindow.h \
     src/settings.h \
     src/settingsdialog.h \

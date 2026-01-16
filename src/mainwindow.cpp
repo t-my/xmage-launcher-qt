@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "downloadmanager.h"
+#include "zipextractthread.h"
 #include <QCoreApplication>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -380,37 +381,34 @@ void MainWindow::extractJava(const QString &filePath)
     QDir().mkpath(extractPath);
 
 #if defined(Q_OS_WIN)
-    // On Windows, use PowerShell to extract
-    QProcess *process = new QProcess(this);
-    connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, [this, process, filePath, extractPath](int exitCode, QProcess::ExitStatus) {
-                if (exitCode == 0)
+    // On Windows, use libzip via ZipExtractThread
+    ZipExtractThread *extractThread = new ZipExtractThread(filePath, extractPath);
+    connect(extractThread, &ZipExtractThread::log, this, &MainWindow::log);
+    connect(extractThread, &ZipExtractThread::progress, this, &MainWindow::update_progress_bar);
+    connect(extractThread, &ZipExtractThread::extractComplete,
+            this, [this, filePath, extractPath](QString) {
+                // Find java.exe in extracted folder
+                QDir dir(extractPath);
+                QStringList entries = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+                QString javaExe = extractPath;
+                if (!entries.isEmpty())
                 {
-                    // Find java.exe in extracted folder
-                    QDir dir(extractPath);
-                    QStringList entries = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-                    QString javaExe = extractPath;
-                    if (!entries.isEmpty())
-                    {
-                        javaExe = extractPath + "/" + entries.first() + "/bin/java.exe";
-                    }
-                    log("Java extracted to: " + extractPath);
-                    log("Setting Java path to: " + javaExe);
-                    settings->setJavaInstallLocation(javaExe);
+                    javaExe = extractPath + "/" + entries.first() + "/bin/java.exe";
                 }
-                else
-                {
-                    log("Extraction failed");
-                }
+                log("Java extracted to: " + extractPath);
+                log("Setting Java path to: " + javaExe);
+                settings->setJavaInstallLocation(javaExe);
                 javaDownloadComplete();
                 QFile::remove(filePath);
-                process->deleteLater();
             });
-
-    process->start("powershell", QStringList()
-                                     << "-Command"
-                                     << QString("Expand-Archive -Path '%1' -DestinationPath '%2' -Force")
-                                            .arg(filePath, extractPath));
+    connect(extractThread, &ZipExtractThread::extractFailed,
+            this, [this, filePath](QString error) {
+                log("Extraction failed: " + error);
+                javaDownloadComplete();
+                QFile::remove(filePath);
+            });
+    connect(extractThread, &ZipExtractThread::finished, extractThread, &QObject::deleteLater);
+    extractThread->start();
 #else
     // On macOS/Linux, use tar
     QProcess *process = new QProcess(this);
