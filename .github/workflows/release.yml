@@ -1,0 +1,269 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-qt6-base
+            mingw-w64-x86_64-qt6-tools
+            mingw-w64-x86_64-libzip
+            make
+            zip
+
+      - name: Build application
+        run: |
+          mkdir build
+          cd build
+          qmake6 ..
+          make -j$(nproc)
+          strip release/xmage-launcher-qt.exe
+
+      - name: Deploy Qt libraries
+        run: |
+          cd build/release
+          windeployqt xmage-launcher-qt.exe
+
+      - name: Create distribution zip
+        run: |
+          mkdir -p dist
+          cp build/release/xmage-launcher-qt.exe dist/
+          cp build/release/*.dll dist/ 2>/dev/null || true
+          cp -r build/release/platforms dist/ 2>/dev/null || true
+          cp -r build/release/styles dist/ 2>/dev/null || true
+          cp -r build/release/tls dist/ 2>/dev/null || true
+          cp -r build/release/imageformats dist/ 2>/dev/null || true
+          # Copy MinGW runtime DLLs
+          cp /mingw64/bin/libgcc_s_seh-1.dll dist/
+          cp /mingw64/bin/libstdc++-6.dll dist/
+          cp /mingw64/bin/libwinpthread-1.dll dist/
+          # Copy libzip and its dependencies
+          cp /mingw64/bin/libzip.dll dist/
+          cp /mingw64/bin/zlib1.dll dist/
+          cp /mingw64/bin/libbz2-1.dll dist/
+          cp /mingw64/bin/liblzma-5.dll dist/
+          cp /mingw64/bin/libzstd.dll dist/
+          cp /mingw64/bin/libnettle-8.dll dist/
+          cp /mingw64/bin/libgnutls-30.dll dist/ 2>/dev/null || true
+          # Copy Qt dependencies not handled by windeployqt
+          cp /mingw64/bin/libdouble-conversion.dll dist/
+          cp /mingw64/bin/libb2-1.dll dist/
+          cp /mingw64/bin/libpcre2-16-0.dll dist/
+          cp /mingw64/bin/libpcre2-8-0.dll dist/
+          cp /mingw64/bin/libharfbuzz-0.dll dist/
+          cp /mingw64/bin/libpng16-16.dll dist/
+          cp /mingw64/bin/libjpeg-8.dll dist/
+          cp /mingw64/bin/libfreetype-6.dll dist/
+          cp /mingw64/bin/libbrotlidec.dll dist/
+          cp /mingw64/bin/libbrotlicommon.dll dist/
+          cp /mingw64/bin/libglib-2.0-0.dll dist/
+          cp /mingw64/bin/libintl-8.dll dist/
+          cp /mingw64/bin/libiconv-2.dll dist/
+          cp /mingw64/bin/libgraphite2.dll dist/
+          cp /mingw64/bin/libmd4c.dll dist/
+          # Copy ICU libraries
+          cp /mingw64/bin/libicuin*.dll dist/
+          cp /mingw64/bin/libicuuc*.dll dist/
+          cp /mingw64/bin/libicudt*.dll dist/
+          mkdir -p dist/java
+          mkdir -p dist/xmage
+          cd dist
+          zip -r -q ../windows.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows.zip
+          path: windows.zip
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install qt libzip
+
+      - name: Build application
+        run: |
+          mkdir build
+          cd build
+          qmake ..
+          make -j$(sysctl -n hw.ncpu)
+
+      - name: Deploy Qt frameworks
+        run: |
+          cd build
+          macdeployqt xmage-launcher-qt.app
+
+      - name: Code sign
+        run: |
+          cd build
+          codesign --force --deep --sign - xmage-launcher-qt.app
+
+      - name: Create distribution zip
+        run: |
+          mkdir -p dist
+          cp -R build/xmage-launcher-qt.app dist/
+          mkdir -p dist/java
+          mkdir -p dist/xmage
+          cd dist
+          zip -r -q ../macos.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos.zip
+          path: macos.zip
+
+  build-linux:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            qt6-base-dev \
+            libqt6network6 \
+            libzip-dev \
+            libgl1-mesa-dev \
+            libxkbcommon-dev \
+            libxcb-cursor0 \
+            fuse \
+            file
+
+      - name: Build application
+        run: |
+          mkdir build
+          cd build
+          qmake6 ..
+          make -j$(nproc)
+          strip xmage-launcher-qt
+
+      - name: Create AppDir structure
+        run: |
+          mkdir -p build/AppDir/usr/bin
+          mkdir -p build/AppDir/usr/lib
+          mkdir -p build/AppDir/usr/plugins/platforms
+          mkdir -p build/AppDir/usr/plugins/tls
+          mkdir -p build/AppDir/usr/plugins/xcbglintegrations
+          mkdir -p build/AppDir/usr/share/applications
+          mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
+          cp build/xmage-launcher-qt build/AppDir/usr/bin/
+          cp packaging/linux/xmage-launcher-qt.desktop build/AppDir/usr/share/applications/
+          cp resources/icon-mage.png build/AppDir/usr/share/icons/hicolor/256x256/apps/xmage-launcher-qt.png
+
+      - name: Copy Qt libraries
+        run: |
+          cp /usr/lib/x86_64-linux-gnu/libQt6Core.so.6 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libQt6Gui.so.6 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libQt6Widgets.so.6 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libQt6Network.so.6 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libQt6DBus.so.6 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libQt6OpenGL.so.6 build/AppDir/usr/lib/ || true
+          cp /usr/lib/x86_64-linux-gnu/libzip.so.4 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libdouble-conversion.so.3 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libb2.so.1 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libpcre2-16.so.0 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libmd4c.so.0 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libssl.so.3 build/AppDir/usr/lib/
+          cp /usr/lib/x86_64-linux-gnu/libcrypto.so.3 build/AppDir/usr/lib/
+
+      - name: Copy Qt plugins
+        run: |
+          cp /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms/libqxcb.so build/AppDir/usr/plugins/platforms/ || true
+          cp /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms/libqwayland*.so build/AppDir/usr/plugins/platforms/ 2>/dev/null || true
+          cp /usr/lib/x86_64-linux-gnu/qt6/plugins/xcbglintegrations/*.so build/AppDir/usr/plugins/xcbglintegrations/ 2>/dev/null || true
+          cp /usr/lib/x86_64-linux-gnu/qt6/plugins/tls/libqopensslbackend.so build/AppDir/usr/plugins/tls/ || true
+          cp /usr/lib/x86_64-linux-gnu/qt6/plugins/tls/libqcertonlybackend.so build/AppDir/usr/plugins/tls/ || true
+
+      - name: Create AppRun script
+        run: |
+          cat > build/AppDir/AppRun << 'EOF'
+          #!/bin/bash
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
+          export QT_PLUGIN_PATH="${HERE}/usr/plugins"
+          export QT_QPA_PLATFORM_PLUGIN_PATH="${HERE}/usr/plugins/platforms"
+          exec "${HERE}/usr/bin/xmage-launcher-qt" "$@"
+          EOF
+          chmod +x build/AppDir/AppRun
+          ln -sf usr/share/applications/xmage-launcher-qt.desktop build/AppDir/xmage-launcher-qt.desktop
+          ln -sf usr/share/icons/hicolor/256x256/apps/xmage-launcher-qt.png build/AppDir/xmage-launcher-qt.png
+          ln -sf usr/share/icons/hicolor/256x256/apps/xmage-launcher-qt.png build/AppDir/.DirIcon
+
+      - name: Download appimagetool
+        run: |
+          curl -L -o build/appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x build/appimagetool
+
+      - name: Create AppImage
+        run: |
+          cd build
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run AppDir XMage_Launcher-x86_64.AppImage
+
+      - name: Create distribution zip
+        run: |
+          mkdir -p dist
+          cp build/XMage_Launcher-x86_64.AppImage dist/
+          mkdir -p dist/java
+          mkdir -p dist/xmage
+          cd dist
+          zip -r ../linux.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux.zip
+          path: linux.zip
+
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release files
+        run: |
+          mv artifacts/windows.zip/windows.zip .
+          mv artifacts/macos.zip/macos.zip .
+          mv artifacts/linux.zip/linux.zip .
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            windows.zip
+            macos.zip
+            linux.zip
