@@ -42,6 +42,15 @@ MainWindow::MainWindow(QWidget *parent)
     appDir.cdUp(); // .app
     appDir.cdUp(); // folder containing .app
     javaDownloadPath = appDir.absolutePath();
+
+    // Check if path is writable (App Translocation makes it read-only)
+    QFileInfo pathInfo(javaDownloadPath);
+    if (!pathInfo.isWritable())
+    {
+        // Fall back to Application Support directory
+        javaDownloadPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+        QDir().mkpath(javaDownloadPath);
+    }
 #elif defined(Q_OS_LINUX)
     // On Linux, check if running from an AppImage (which mounts to read-only /tmp)
     QString appImagePath = qEnvironmentVariable("APPIMAGE");
