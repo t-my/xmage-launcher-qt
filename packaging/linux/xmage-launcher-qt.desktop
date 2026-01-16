@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=XMage Launcher
-Comment=Launcher for XMage - Magic: The Gathering game
-Exec=xmage-launcher-qt
-Icon=xmage-launcher-qt
-Categories=Game;
-Terminal=false

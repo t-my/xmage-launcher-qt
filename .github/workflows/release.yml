@@ -175,7 +175,16 @@ jobs:
           mkdir -p build/AppDir/usr/share/applications
           mkdir -p build/AppDir/usr/share/icons/hicolor/256x256/apps
           cp build/xmage-launcher-qt build/AppDir/usr/bin/
-          cp packaging/linux/xmage-launcher-qt.desktop build/AppDir/usr/share/applications/
+          cat > build/AppDir/usr/share/applications/xmage-launcher-qt.desktop << 'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=XMage Launcher
+          Comment=Launcher for XMage - Magic: The Gathering game
+          Exec=xmage-launcher-qt
+          Icon=xmage-launcher-qt
+          Categories=Game;
+          Terminal=false
+          EOF
           cp resources/icon-mage.png build/AppDir/usr/share/icons/hicolor/256x256/apps/xmage-launcher-qt.png
 
       - name: Copy Qt libraries
