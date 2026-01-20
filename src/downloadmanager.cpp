@@ -17,44 +17,23 @@ DownloadManager::~DownloadManager()
     delete networkManager;
 }
 
-void DownloadManager::downloadStable()
+void DownloadManager::downloadXmage(QString configUrl)
 {
-    newVersion.branch = STABLE;
-    connect(networkManager, &QNetworkAccessManager::finished, this, &DownloadManager::poll_github);
-    mainWindow->log("Polling GitHub for latest stable version...");
-    QNetworkRequest request(QUrl("https://api.github.com/repos/magefree/mage/releases"));
+    connect(networkManager, &QNetworkAccessManager::finished, this, &DownloadManager::poll_config);
+    mainWindow->log("Fetching XMage version info from " + configUrl + "...");
+    QUrl url(configUrl);
+    QNetworkRequest request(url);
     networkManager->get(request);
 }
 
-void DownloadManager::downloadBeta()
-{
-    newVersion.branch = BETA;
-    connect(networkManager, &QNetworkAccessManager::finished, this, &DownloadManager::poll_beta);
-    mainWindow->log("Polling xmage.today for latest beta version...");
-    QNetworkRequest request(QUrl("http://xmage.today/config.json"));
-    networkManager->get(request);
-}
-
-void DownloadManager::updateXmage(XMageVersion versionInfo)
+void DownloadManager::updateXmage(XMageVersion versionInfo, QString configUrl)
 {
     this->currentVersion = versionInfo;
     this->update = true;
-    if (versionInfo.branch == STABLE)
-    {
-        downloadStable();
-    }
-    else if (versionInfo.branch == BETA)
-    {
-        downloadBeta();
-    }
-    else
-    {
-        mainWindow->download_fail("Unknown branch. Aborting update.");
-        this->deleteLater();
-    }
+    downloadXmage(configUrl);
 }
 
-void DownloadManager::poll_github(QNetworkReply *reply)
+void DownloadManager::poll_config(QNetworkReply *reply)
 {
     if (reply->error() != QNetworkReply::NoError)
     {
@@ -62,33 +41,11 @@ void DownloadManager::poll_github(QNetworkReply *reply)
     }
     else
     {
-        QJsonObject latestRelease = QJsonDocument::fromJson(reply->readAll()).array().first().toObject();
-        QUrl url(latestRelease.value("assets").toArray().first().toObject().value("browser_download_url").toString());
+        QJsonObject xmageInfo = QJsonDocument::fromJson(reply->readAll()).object().value("XMage").toObject();
+        QUrl url(xmageInfo.value("location").toString());
         if (url.isValid())
         {
-            newVersion.version = latestRelease.value("name").toString();
-            startDownload(url, reply);
-        }
-        else
-        {
-            pollFailed(reply, "Error parsing JSON");
-        }
-    }
-}
-
-void DownloadManager::poll_beta(QNetworkReply *reply)
-{
-    if (reply->error() != QNetworkReply::NoError)
-    {
-        pollFailed(reply, "Network error: " + reply->errorString());
-    }
-    else
-    {
-        QJsonObject betaInfo = QJsonDocument::fromJson(reply->readAll()).object().value("XMage").toObject();
-        QUrl url(betaInfo.value("location").toString());
-        if (url.isValid())
-        {
-            newVersion.version = betaInfo.value("version").toString();
+            newVersion.version = xmageInfo.value("version").toString();
             startDownload(url, reply);
         }
         else

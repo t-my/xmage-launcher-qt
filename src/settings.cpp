@@ -18,19 +18,6 @@ Settings::Settings()
         {
             versionInfo.version = savedVersion;
         }
-        QString branch = jsonObject.value("branch").toString();
-        if (branch == "stable")
-        {
-            versionInfo.branch = STABLE;
-        }
-        else if (branch == "beta")
-        {
-            versionInfo.branch = BETA;
-        }
-        else
-        {
-            versionInfo.branch = UNKNOWN;
-        }
         xmageInstallations.insert(location, versionInfo);
     }
 
@@ -52,20 +39,28 @@ Settings::Settings()
     {
         currentServerOptions = defaultServerOptions;
     }
+
+    // Load config URLs, ensure defaults are always present
+    configUrls = diskSettings.value("configUrls").toStringList();
+    if (!configUrls.contains("http://xmage.today/config.json"))
+    {
+        configUrls.prepend("http://xmage.today/config.json");
+    }
+    if (!configUrls.contains("http://xdhs.net/xmage/config.json"))
+    {
+        configUrls.insert(1, "http://xdhs.net/xmage/config.json");
+    }
+    // Ensure selected URL is in the list
+    if (!configUrls.contains(configUrl))
+    {
+        configUrls.append(configUrl);
+    }
 }
 
 void Settings::addXmageInstallation(QString location, XMageVersion &versionInfo)
 {
     xmageInstallations.insert(location, versionInfo);
     saveXmageInstallation();
-}
-
-void Settings::removeXmageInstallaion(QString location)
-{
-    if (xmageInstallations.remove(location) != 0)
-    {
-        saveXmageInstallation();
-    }
 }
 
 void Settings::setXmageInstallLocation(QString location)
@@ -91,21 +86,38 @@ void Settings::saveXmageInstallation()
         QJsonObject jsonObject;
         jsonObject.insert("installLocation", i.key());
         jsonObject.insert("version", curValue.version);
-        switch (curValue.branch)
-        {
-            case STABLE:
-                jsonObject.insert("branch", "stable");
-                break;
-            case BETA:
-                jsonObject.insert("branch", "beta");
-                break;
-            default:
-                jsonObject.insert("branch", "unknown");
-                break;
-        }
         jsonArray.append(jsonObject);
     }
     diskSettings.setValue("xmageInstallations", jsonArray);
+}
+
+void Settings::setConfigUrl(QString url)
+{
+    configUrl = url;
+    diskSettings.setValue("configUrl", url);
+}
+
+void Settings::addConfigUrl(QString url)
+{
+    if (!configUrls.contains(url))
+    {
+        configUrls.append(url);
+        saveConfigUrls();
+    }
+}
+
+void Settings::removeConfigUrl(QString url)
+{
+    // Don't allow removing the default URL
+    if (url != "http://xmage.today/config.json" && configUrls.removeAll(url) > 0)
+    {
+        saveConfigUrls();
+    }
+}
+
+void Settings::saveConfigUrls()
+{
+    diskSettings.setValue("configUrls", configUrls);
 }
 
 void Settings::setClientOptions(QString options)

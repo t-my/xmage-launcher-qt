@@ -20,9 +20,8 @@ class DownloadManager : public QObject
 public:
     DownloadManager(QString downloadLocation, MainWindow *mainWindow);
     ~DownloadManager();
-    void downloadStable();
-    void downloadBeta();
-    void updateXmage(XMageVersion versionInfo);
+    void downloadXmage(QString configUrl);
+    void updateXmage(XMageVersion versionInfo, QString configUrl);
 
 private:
     bool update = false;
@@ -38,8 +37,7 @@ private:
     void startDownload(QUrl url, QNetworkReply *reply);
 
 private slots:
-    void poll_github(QNetworkReply *reply);
-    void poll_beta(QNetworkReply *reply);
+    void poll_config(QNetworkReply *reply);
     void download_complete(QNetworkReply *reply);
     void save_data();
 };

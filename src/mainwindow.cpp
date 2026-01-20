@@ -125,46 +125,22 @@ void MainWindow::on_updateButton_clicked()
 {
     if (settings->xmageInstallLocation.isEmpty())
     {
-        QMessageBox::warning(this, "XMage location not set", "Please set XMage location in settings.");
-        SettingsDialog *settingsDialog = new SettingsDialog(settings, this);
-        settingsDialog->showXmageSettings();
-        settingsDialog->open();
+        QMessageBox::warning(this, "XMage location not set", "Please download XMage first.");
+        return;
     }
     else
     {
         XMageVersion versionInfo;
         versionInfo.version = "Unknown";
-        versionInfo.branch = UNKNOWN;
         if (settings->xmageInstallations.contains(settings->xmageInstallLocation))
         {
             versionInfo = settings->xmageInstallations.value(settings->xmageInstallLocation);
         }
-        if (versionInfo.branch == UNKNOWN)
-        {
-            QStringList branches;
-            branches << "Stable" << "Beta";
-            bool dialogAccepted;
-            QString selectedBranch = QInputDialog::getItem(this, "Select Branch", "XMage Branch", branches, 0, false, &dialogAccepted);
-            if (dialogAccepted)
-            {
-                if (selectedBranch == branches.at(1))
-                {
-                    versionInfo.branch = BETA;
-                }
-                else
-                {
-                    versionInfo.branch = STABLE;
-                }
-            }
-        }
-        if (versionInfo.branch != UNKNOWN)
-        {
-            ui->downloadButton->setEnabled(false);
-            ui->updateButton->setEnabled(false);
-            ui->progressBar->show();
-            DownloadManager *downloadManager = new DownloadManager(settings->xmageInstallLocation, this);
-            downloadManager->updateXmage(versionInfo);
-        }
+        ui->downloadButton->setEnabled(false);
+        ui->updateButton->setEnabled(false);
+        ui->progressBar->show();
+        DownloadManager *downloadManager = new DownloadManager(settings->xmageInstallLocation, this);
+        downloadManager->updateXmage(versionInfo, settings->configUrl);
     }
 }
 
@@ -193,30 +169,16 @@ void MainWindow::on_clientServerButton_clicked()
 
 void MainWindow::on_downloadButton_clicked()
 {
-    QStringList branches;
-    branches << "Stable" << "Beta";
-    bool dialogAccepted;
-    QString selectedBranch = QInputDialog::getItem(this, "Select Branch", "XMage Branch", branches, 0, false, &dialogAccepted);
-    if (dialogAccepted)
-    {
-        // Download to current folder/xmage
-        QString downloadLocation = javaDownloadPath + "/xmage";
-        QDir().mkpath(downloadLocation);
+    // Download to current folder/xmage
+    QString downloadLocation = javaDownloadPath + "/xmage";
+    QDir().mkpath(downloadLocation);
 
-        ui->downloadButton->setEnabled(false);
-        ui->updateButton->setEnabled(false);
-        ui->progressBar->show();
-        log("Downloading XMage to: " + downloadLocation);
-        DownloadManager *downloadManager = new DownloadManager(downloadLocation, this);
-        if (selectedBranch == branches.at(1))
-        {
-            downloadManager->downloadBeta();
-        }
-        else
-        {
-            downloadManager->downloadStable();
-        }
-    }
+    ui->downloadButton->setEnabled(false);
+    ui->updateButton->setEnabled(false);
+    ui->progressBar->show();
+    log("Downloading XMage to: " + downloadLocation);
+    DownloadManager *downloadManager = new DownloadManager(downloadLocation, this);
+    downloadManager->downloadXmage(settings->configUrl);
 }
 
 void MainWindow::on_javaButton_clicked()
@@ -233,7 +195,7 @@ void MainWindow::fetchJavaConfig()
 {
     javaDownloading = true;
     ui->javaButton->setEnabled(false);
-    log("Fetching Java download info...");
+    log("Fetching Java download info from " + settings->configUrl + "...");
 
     if (javaNetworkManager == nullptr)
     {
@@ -245,7 +207,7 @@ void MainWindow::fetchJavaConfig()
     }
 
     connect(javaNetworkManager, &QNetworkAccessManager::finished, this, &MainWindow::onJavaConfigFetched);
-    QNetworkRequest request(QUrl("http://xmage.today/config.json"));
+    QNetworkRequest request(QUrl(settings->configUrl));
     javaNetworkManager->get(request);
 }
 
@@ -605,10 +567,7 @@ bool MainWindow::validateJavaSettings()
     {
         return true;
     }
-    QMessageBox::warning(this, "Invalid Java Configuration", "Invalid Java configuration. Please set Java location in settings.");
-    SettingsDialog *settingsDialog = new SettingsDialog(settings, this);
-    settingsDialog->showJavaSettings();
-    settingsDialog->open();
+    QMessageBox::warning(this, "Invalid Java Configuration", "Invalid Java configuration. Please download Java first.");
     return false;
 }
 
@@ -620,10 +579,7 @@ bool MainWindow::findClientJar(QString *jar)
     QFileInfoList infoList = clientDir.entryInfoList(filter, QDir::Files);
     if (infoList.isEmpty())
     {
-        QMessageBox::warning(this, "Invalid XMage Configuration", "Unable to find XMage client jar file. Please set XMage location in settings.");
-        SettingsDialog *settingsDialog = new SettingsDialog(settings, this);
-        settingsDialog->showXmageSettings();
-        settingsDialog->open();
+        QMessageBox::warning(this, "Invalid XMage Configuration", "Unable to find XMage client jar file. Please download XMage first.");
         return false;
     }
     *jar = infoList.at(0).absoluteFilePath();
@@ -638,10 +594,7 @@ bool MainWindow::findServerJar(QString *jar)
     QFileInfoList infoList = clientDir.entryInfoList(filter, QDir::Files);
     if (infoList.isEmpty())
     {
-        QMessageBox::warning(this, "Invalid XMage Configuration", "Unable to find XMage server jar file. Please set XMage location in settings.");
-        SettingsDialog *settingsDialog = new SettingsDialog(settings, this);
-        settingsDialog->showXmageSettings();
-        settingsDialog->open();
+        QMessageBox::warning(this, "Invalid XMage Configuration", "Unable to find XMage server jar file. Please download XMage first.");
         return false;
     }
     *jar = infoList.at(0).absoluteFilePath();

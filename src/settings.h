@@ -8,12 +8,9 @@
 #include <QStringList>
 #include <QSettings>
 
-enum XMageBranch { UNKNOWN, STABLE, BETA };
-
 struct XMageVersion
 {
     QString version;
-    XMageBranch branch;
 };
 
 Q_DECLARE_METATYPE(XMageVersion);
@@ -25,6 +22,8 @@ public:
     QSettings diskSettings { "xmage", "xmage-launcher-qt" };
     QString xmageInstallLocation { diskSettings.value("xmageInstallLocation").toString() };
     QString javaInstallLocation { diskSettings.value("javaInstallLocation").toString() };
+    QString configUrl { diskSettings.value("configUrl", "http://xmage.today/config.json").toString() };
+    QStringList configUrls;
     QMap<QString, XMageVersion> xmageInstallations;
     QStringList defaultClientOptions;
     QStringList defaultServerOptions;
@@ -32,14 +31,17 @@ public:
     QStringList currentServerOptions;
 
     void addXmageInstallation(QString location, XMageVersion &version);
-    void removeXmageInstallaion(QString location);
     void setXmageInstallLocation(QString location);
     void setJavaInstallLocation(QString location);
+    void setConfigUrl(QString url);
+    void addConfigUrl(QString url);
+    void removeConfigUrl(QString url);
     void setClientOptions(QString options);
     void setServerOptions(QString options);
 
 private:
     void saveXmageInstallation();
+    void saveConfigUrls();
     QStringList stringToList(QString str);
 };
 
