@@ -1,4 +1,5 @@
 #include "downloadmanager.h"
+#include "unzipthread.h"
 
 DownloadManager::DownloadManager(QString downloadLocation, MainWindow *mainWindow)
     : QObject(mainWindow)
@@ -26,11 +27,11 @@ void DownloadManager::downloadXmage(QString configUrl)
     networkManager->get(request);
 }
 
-void DownloadManager::updateXmage(XMageVersion versionInfo, QString configUrl)
+void DownloadManager::downloadXmageFromUrl(const QString &url, const QString &version)
 {
-    this->currentVersion = versionInfo;
-    this->update = true;
-    downloadXmage(configUrl);
+    xmageVersion = version.isEmpty() ? "xmage" : version;
+    mainWindow->log("Downloading XMage " + xmageVersion + " from " + url);
+    startDownload(QUrl(url), nullptr);
 }
 
 void DownloadManager::poll_config(QNetworkReply *reply)
@@ -42,10 +43,14 @@ void DownloadManager::poll_config(QNetworkReply *reply)
     else
     {
         QJsonObject xmageInfo = QJsonDocument::fromJson(reply->readAll()).object().value("XMage").toObject();
-        QUrl url(xmageInfo.value("location").toString());
+        QUrl url(xmageInfo.value("full").toString());
         if (url.isValid())
         {
-            newVersion.version = xmageInfo.value("version").toString();
+            xmageVersion = xmageInfo.value("version").toString();
+            if (xmageVersion.isEmpty())
+            {
+                xmageVersion = "xmage";
+            }
             startDownload(url, reply);
         }
         else
@@ -58,40 +63,25 @@ void DownloadManager::poll_config(QNetworkReply *reply)
 void DownloadManager::pollFailed(QNetworkReply *reply, QString errorMessage)
 {
     mainWindow->download_fail(errorMessage);
-    reply->deleteLater();
+    if (reply)
+    {
+        reply->deleteLater();
+    }
     this->deleteLater();
 }
 
 void DownloadManager::startDownload(QUrl url, QNetworkReply *reply)
 {
-    if (newVersion.version.isEmpty())
-    {
-        newVersion.version = "Unknown";
-    }
-    if (update)
-    {
-        if (newVersion.version == currentVersion.version && newVersion.version != "Unknown")
-        {
-            QMessageBox::information(mainWindow, "Up to date", "XMage is already on the latest version");
-            pollFailed(reply, "XMage is already up to date on version " + currentVersion.version);
-            return;
-        }
-        QString message = "Current version: " + currentVersion.version + "\nLatest Version: " + newVersion.version + "\nWould you like to update?";
-        if (QMessageBox::question(mainWindow, "Update XMage?", message) != QMessageBox::Yes)
-        {
-            pollFailed(reply, "User declined update");
-            return;
-        }
-    }
+    mainWindow->log("Found XMage version: " + xmageVersion);
+
     QString fileName;
     if (!downloadLocation.isEmpty())
     {
-        // Create version subfolder: downloadLocation/version/
-        QString versionDir = downloadLocation + '/' + newVersion.version;
-        QDir().mkpath(versionDir);
-        fileName.append(versionDir + '/');
+        QDir().mkpath(downloadLocation);
+        fileName.append(downloadLocation + '/');
     }
-    fileName.append(newVersion.version + ".zip");
+    fileName.append("xmage.zip");
+
     saveFile = new QSaveFile(fileName);
     if (!saveFile->open(QIODevice::WriteOnly))
     {
@@ -110,7 +100,10 @@ void DownloadManager::startDownload(QUrl url, QNetworkReply *reply)
         downloadReply = networkManager->get(request);
         connect(downloadReply, &QNetworkReply::downloadProgress, mainWindow, &MainWindow::update_progress_bar);
         connect(downloadReply, &QNetworkReply::readyRead, this, &DownloadManager::save_data);
-        reply->deleteLater();
+        if (reply)
+        {
+            reply->deleteLater();
+        }
     }
 }
 
@@ -152,7 +145,7 @@ void DownloadManager::download_complete(QNetworkReply *reply)
     this->deleteLater();
     if (errorMessage.isEmpty())
     {
-        UnzipThread *unzip = new UnzipThread(fileName, newVersion, update);
+        UnzipThread *unzip = new UnzipThread(fileName, downloadLocation);
         connect(unzip, &UnzipThread::log, mainWindow, &MainWindow::log);
         connect(unzip, &UnzipThread::progress, mainWindow, &MainWindow::update_progress_bar);
         connect(unzip, &UnzipThread::unzip_fail, mainWindow, &MainWindow::download_fail);

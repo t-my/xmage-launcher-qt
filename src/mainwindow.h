@@ -16,6 +16,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
+#include <QFile>
+#include <QDir>
 #include "aboutdialog.h"
 #include "settingsdialog.h"
 #include "settings.h"
@@ -37,7 +39,7 @@ public slots:
     void update_progress_bar(qint64 bytesReceived, qint64 bytesTotal);
     void log(QString message);
     void download_fail(QString errorMessage);
-    void download_success(QString installLocation, XMageVersion versionInfo);
+    void download_success(QString installLocation);
     void load_browser(const QString &url);
 
 protected:
@@ -61,10 +63,12 @@ private slots:
     void server_finished();
 
     // Java download slots
-    void onJavaConfigFetched(QNetworkReply *reply);
     void onJavaDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
     void onJavaDownloadFinished(QNetworkReply *reply);
     void onJavaDownloadReadyRead();
+
+    // Config fetch slot
+    void onConfigFetched(QNetworkReply *reply);
 
 private:
     Ui::MainWindow *ui;
@@ -81,8 +85,11 @@ private:
     QSaveFile *javaSaveFile = nullptr;
     QString javaBaseUrl;
     QString javaVersion;
-    QString javaDownloadPath;
     bool javaDownloading = false;
+
+    // Config fetch members
+    QNetworkAccessManager *configNetworkManager = nullptr;
+    bool configFetching = false;
 
     bool validateJavaSettings();
     bool findClientJar(QString *jar);
@@ -92,11 +99,15 @@ private:
     void stopServer();
 
     // Java download methods
-    void fetchJavaConfig();
     void startJavaDownload();
     QString getJavaPlatformSuffix();
     void extractJava(const QString &filePath);
     void javaDownloadComplete();
     void javaDownloadFailed(const QString &error);
+
+    // Config methods
+    void fetchConfig();
+    void updateLaunchReadiness();
+    bool loadCachedConfig(QJsonObject *config);
 };
 #endif // MAINWINDOW_H

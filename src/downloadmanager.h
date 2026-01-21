@@ -10,8 +10,6 @@
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkReply>
 #include "mainwindow.h"
-#include "settings.h"
-#include "unzipthread.h"
 
 class DownloadManager : public QObject
 {
@@ -21,13 +19,11 @@ public:
     DownloadManager(QString downloadLocation, MainWindow *mainWindow);
     ~DownloadManager();
     void downloadXmage(QString configUrl);
-    void updateXmage(XMageVersion versionInfo, QString configUrl);
+    void downloadXmageFromUrl(const QString &url, const QString &version);
 
 private:
-    bool update = false;
     QString downloadLocation;
-    XMageVersion currentVersion;
-    XMageVersion newVersion;
+    QString xmageVersion;
     MainWindow *mainWindow;
     QNetworkAccessManager *networkManager;
     QNetworkReply *downloadReply;

@@ -9,13 +9,13 @@ SettingsDialog::SettingsDialog(Settings *settings, QWidget *parent) :
     ui->clientOptions->setText(settings->currentClientOptions.join(' '));
     ui->serverOptions->setText(settings->currentServerOptions.join(' '));
 
-    // Populate config URL list
-    for (const QString &url : settings->configUrls)
+    // Populate build list with names
+    for (const Build &build : settings->builds)
     {
-        ui->configUrlList->addItem(url);
+        ui->configUrlList->addItem(build.name);
     }
-    // Select the current config URL
-    QList<QListWidgetItem*> items = ui->configUrlList->findItems(settings->configUrl, Qt::MatchExactly);
+    // Select the current build
+    QList<QListWidgetItem*> items = ui->configUrlList->findItems(settings->currentBuildName, Qt::MatchExactly);
     if (!items.isEmpty())
     {
         ui->configUrlList->setCurrentItem(items.first());
@@ -39,24 +39,33 @@ void SettingsDialog::on_resetButton_clicked()
 void SettingsDialog::on_addUrlButton_clicked()
 {
     bool ok;
-    QString url = QInputDialog::getText(this, "Add Config URL",
-                                        "Enter config URL:", QLineEdit::Normal,
-                                        "http://", &ok);
-    if (ok && !url.isEmpty())
+    QString name = QInputDialog::getText(this, "Add Build",
+                                         "Build name:", QLineEdit::Normal,
+                                         "", &ok);
+    if (!ok || name.isEmpty())
     {
-        // Check if URL already exists
-        if (ui->configUrlList->findItems(url, Qt::MatchExactly).isEmpty())
-        {
-            settings->addConfigUrl(url);
-            ui->configUrlList->addItem(url);
-            // Select the newly added item
-            ui->configUrlList->setCurrentRow(ui->configUrlList->count() - 1);
-        }
-        else
-        {
-            QMessageBox::information(this, "URL Exists", "This URL is already in the list.");
-        }
+        return;
     }
+
+    // Check if name already exists
+    if (!ui->configUrlList->findItems(name, Qt::MatchExactly).isEmpty())
+    {
+        QMessageBox::information(this, "Build Exists", "A build with this name already exists.");
+        return;
+    }
+
+    QString url = QInputDialog::getText(this, "Add Build",
+                                        "Config URL:", QLineEdit::Normal,
+                                        "http://", &ok);
+    if (!ok || url.isEmpty())
+    {
+        return;
+    }
+
+    settings->addBuild(name, url);
+    ui->configUrlList->addItem(name);
+    // Select the newly added item
+    ui->configUrlList->setCurrentRow(ui->configUrlList->count() - 1);
 }
 
 void SettingsDialog::on_removeUrlButton_clicked()
@@ -64,24 +73,24 @@ void SettingsDialog::on_removeUrlButton_clicked()
     QListWidgetItem *item = ui->configUrlList->currentItem();
     if (item)
     {
-        QString url = item->text();
-        if (url == "http://xmage.today/config.json")
+        QString name = item->text();
+        if (settings->isDefaultBuild(name))
         {
-            QMessageBox::warning(this, "Cannot Remove", "The default URL cannot be removed.");
+            QMessageBox::warning(this, "Cannot Remove", "Default builds cannot be removed.");
             return;
         }
-        settings->removeConfigUrl(url);
+        settings->removeBuild(name);
         delete ui->configUrlList->takeItem(ui->configUrlList->row(item));
     }
 }
 
 void SettingsDialog::accept()
 {
-    // Get selected config URL
+    // Get selected build
     QListWidgetItem *selectedItem = ui->configUrlList->currentItem();
     if (selectedItem)
     {
-        settings->setConfigUrl(selectedItem->text());
+        settings->setCurrentBuild(selectedItem->text());
     }
 
     settings->setClientOptions(ui->clientOptions->text());

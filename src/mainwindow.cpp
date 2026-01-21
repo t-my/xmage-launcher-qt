@@ -33,33 +33,8 @@ MainWindow::MainWindow(QWidget *parent)
     serverConsole->setReadOnly(true);
     aboutDialog = new AboutDialog(this);
 
-    // Set Java download path to the same folder as the launcher
-    javaDownloadPath = QCoreApplication::applicationDirPath();
-#if defined(Q_OS_MACOS)
-    // On macOS, go up from .app/Contents/MacOS to the folder containing the .app
-    QDir appDir(javaDownloadPath);
-    appDir.cdUp(); // Contents
-    appDir.cdUp(); // .app
-    appDir.cdUp(); // folder containing .app
-    javaDownloadPath = appDir.absolutePath();
-
-    // Check if path is writable (App Translocation makes it read-only)
-    QFileInfo pathInfo(javaDownloadPath);
-    if (!pathInfo.isWritable())
-    {
-        // Fall back to Application Support directory
-        javaDownloadPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-        QDir().mkpath(javaDownloadPath);
-    }
-#elif defined(Q_OS_LINUX)
-    // On Linux, check if running from an AppImage (which mounts to read-only /tmp)
-    QString appImagePath = qEnvironmentVariable("APPIMAGE");
-    if (!appImagePath.isEmpty())
-    {
-        QFileInfo appImageInfo(appImagePath);
-        javaDownloadPath = appImageInfo.absolutePath();
-    }
-#endif
+    // Log startup info and check launch readiness
+    updateLaunchReadiness();
 }
 
 MainWindow::~MainWindow()
@@ -71,6 +46,10 @@ MainWindow::~MainWindow()
     if (javaNetworkManager != nullptr)
     {
         delete javaNetworkManager;
+    }
+    if (configNetworkManager != nullptr)
+    {
+        delete configNetworkManager;
     }
     delete aboutDialog;
     delete settings;
@@ -92,56 +71,19 @@ void MainWindow::download_fail(QString errorMessage)
     ui->updateButton->setEnabled(true);
 }
 
-void MainWindow::download_success(QString installLocation, XMageVersion versionInfo)
+void MainWindow::download_success(QString installLocation)
 {
-    // Check if mage-client exists directly or in a subfolder
-    QString xmagePath = installLocation;
-    QDir dir(installLocation);
-
-    if (!QDir(installLocation + "/mage-client").exists())
-    {
-        // Look for mage-client in subfolders (zip might have root folder)
-        QStringList entries = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-        for (const QString &entry : entries)
-        {
-            if (QDir(installLocation + "/" + entry + "/mage-client").exists())
-            {
-                xmagePath = installLocation + "/" + entry;
-                break;
-            }
-        }
-    }
-
-    log("Setting XMage path to: " + xmagePath);
-    settings->setXmageInstallLocation(xmagePath);
-    settings->addXmageInstallation(xmagePath, versionInfo);
+    log("XMage installed to: " + installLocation);
     ui->progressBar->hide();
     ui->progressBar->setValue(0);
     ui->downloadButton->setEnabled(true);
     ui->updateButton->setEnabled(true);
+    updateLaunchReadiness();
 }
 
 void MainWindow::on_updateButton_clicked()
 {
-    if (settings->xmageInstallLocation.isEmpty())
-    {
-        QMessageBox::warning(this, "XMage location not set", "Please download XMage first.");
-        return;
-    }
-    else
-    {
-        XMageVersion versionInfo;
-        versionInfo.version = "Unknown";
-        if (settings->xmageInstallations.contains(settings->xmageInstallLocation))
-        {
-            versionInfo = settings->xmageInstallations.value(settings->xmageInstallLocation);
-        }
-        ui->downloadButton->setEnabled(false);
-        ui->updateButton->setEnabled(false);
-        ui->progressBar->show();
-        DownloadManager *downloadManager = new DownloadManager(settings->xmageInstallLocation, this);
-        downloadManager->updateXmage(versionInfo, settings->configUrl);
-    }
+    fetchConfig();
 }
 
 void MainWindow::on_clientButton_clicked()
@@ -169,16 +111,25 @@ void MainWindow::on_clientServerButton_clicked()
 
 void MainWindow::on_downloadButton_clicked()
 {
-    // Download to current folder/xmage
-    QString downloadLocation = javaDownloadPath + "/xmage";
+    QJsonObject config;
+    if (!loadCachedConfig(&config))
+    {
+        QMessageBox::warning(this, "No Config", "No cached config. Click 'Check Updates' first.");
+        return;
+    }
+
+    QJsonObject xmageObj = config.value("XMage").toObject();
+    QString downloadUrl = xmageObj.value("full").toString();
+    QString version = xmageObj.value("version").toString();
+    QString downloadLocation = settings->getCurrentBuildInstallPath();
     QDir().mkpath(downloadLocation);
 
     ui->downloadButton->setEnabled(false);
     ui->updateButton->setEnabled(false);
     ui->progressBar->show();
-    log("Downloading XMage to: " + downloadLocation);
+    log("Downloading XMage " + version + " to: " + downloadLocation);
     DownloadManager *downloadManager = new DownloadManager(downloadLocation, this);
-    downloadManager->downloadXmage(settings->configUrl);
+    downloadManager->downloadXmageFromUrl(downloadUrl, version);
 }
 
 void MainWindow::on_javaButton_clicked()
@@ -188,55 +139,26 @@ void MainWindow::on_javaButton_clicked()
         log("Java download already in progress...");
         return;
     }
-    fetchJavaConfig();
-}
 
-void MainWindow::fetchJavaConfig()
-{
-    javaDownloading = true;
-    ui->javaButton->setEnabled(false);
-    log("Fetching Java download info from " + settings->configUrl + "...");
-
-    if (javaNetworkManager == nullptr)
+    QJsonObject config;
+    if (!loadCachedConfig(&config))
     {
-        javaNetworkManager = new QNetworkAccessManager(this);
-    }
-    else
-    {
-        javaNetworkManager->disconnect();
-    }
-
-    connect(javaNetworkManager, &QNetworkAccessManager::finished, this, &MainWindow::onJavaConfigFetched);
-    QNetworkRequest request(QUrl(settings->configUrl));
-    javaNetworkManager->get(request);
-}
-
-void MainWindow::onJavaConfigFetched(QNetworkReply *reply)
-{
-    javaNetworkManager->disconnect();
-
-    if (reply->error() != QNetworkReply::NoError)
-    {
-        javaDownloadFailed("Failed to fetch config: " + reply->errorString());
-        reply->deleteLater();
+        QMessageBox::warning(this, "No Config", "No cached config. Click 'Check Updates' first.");
         return;
     }
 
-    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
-    QJsonObject root = doc.object();
-    QJsonObject javaObj = root.value("java").toObject();
-
+    QJsonObject javaObj = config.value("java").toObject();
     javaVersion = javaObj.value("version").toString();
     javaBaseUrl = javaObj.value("location").toString();
 
-    reply->deleteLater();
-
     if (javaBaseUrl.isEmpty())
     {
-        javaDownloadFailed("No Java download URL in config");
+        QMessageBox::warning(this, "No Java URL", "No Java download URL in config.");
         return;
     }
 
+    javaDownloading = true;
+    ui->javaButton->setEnabled(false);
     startJavaDownload();
 }
 
@@ -257,9 +179,18 @@ void MainWindow::startJavaDownload()
 {
     QString platform = getJavaPlatformSuffix();
     QString fullUrl = javaBaseUrl + platform;
-    QString fileName = javaDownloadPath + "/java-" + javaVersion + "-" + platform;
+    QString fileName = settings->basePath + "/java-" + javaVersion + "-" + platform;
 
     log("Downloading Java " + javaVersion + " from " + fullUrl);
+
+    if (javaNetworkManager == nullptr)
+    {
+        javaNetworkManager = new QNetworkAccessManager(this);
+    }
+    else
+    {
+        javaNetworkManager->disconnect();
+    }
 
     javaSaveFile = new QSaveFile(fileName);
     if (!javaSaveFile->open(QIODevice::WriteOnly))
@@ -348,7 +279,7 @@ void MainWindow::onJavaDownloadFinished(QNetworkReply *reply)
 
 void MainWindow::extractJava(const QString &filePath)
 {
-    QString extractPath = javaDownloadPath + "/java";
+    QString extractPath = settings->basePath + "/java";
     QDir().mkpath(extractPath);
 
 #if defined(Q_OS_WIN)
@@ -448,6 +379,10 @@ void MainWindow::update_progress_bar(qint64 bytesReceived, qint64 bytesTotal)
 void MainWindow::on_actionSettings_triggered()
 {
     SettingsDialog *settingsDialog = new SettingsDialog(settings, this);
+    connect(settingsDialog, &QDialog::accepted, this, [this]() {
+        log("Build changed to: " + settings->currentBuildName);
+        updateLaunchReadiness();
+    });
     settingsDialog->open();
 }
 
@@ -521,9 +456,18 @@ void MainWindow::launchClient()
     QString clientJar;
     if (validateJavaSettings() && findClientJar(&clientJar))
     {
+        // Derive working directory from jar path (jar is in mage-client/lib/)
+        QFileInfo jarInfo(clientJar);
+        QString clientDir = jarInfo.dir().absolutePath();  // .../mage-client/lib
+        clientDir = QFileInfo(clientDir).dir().absolutePath();  // .../mage-client
+
+        log("Launching XMage client...");
+        log("  Java: " + settings->javaInstallLocation);
+        log("  Build: " + settings->currentBuildName);
+        log("  Client dir: " + clientDir);
         clientConsole->show();
         XMageProcess *process = new XMageProcess(clientConsole);
-        process->setWorkingDirectory(settings->xmageInstallLocation + "/mage-client");
+        process->setWorkingDirectory(clientDir);
         QStringList arguments = settings->currentClientOptions;
         arguments << "-jar" << clientJar;
         process->start(settings->javaInstallLocation, arguments);
@@ -535,12 +479,21 @@ void MainWindow::launchServer()
     QString serverJar;
     if (serverProcess == nullptr && validateJavaSettings() && findServerJar(&serverJar))
     {
+        // Derive working directory from jar path (jar is in mage-server/lib/)
+        QFileInfo jarInfo(serverJar);
+        QString serverDir = jarInfo.dir().absolutePath();  // .../mage-server/lib
+        serverDir = QFileInfo(serverDir).dir().absolutePath();  // .../mage-server
+
+        log("Launching XMage server...");
+        log("  Java: " + settings->javaInstallLocation);
+        log("  Build: " + settings->currentBuildName);
+        log("  Server dir: " + serverDir);
         ui->serverButton->setText("Stop Server");
         ui->clientServerButton->setEnabled(false);
         serverConsole->show();
         serverProcess = new XMageProcess(serverConsole);
         connect(serverProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &MainWindow::server_finished);
-        serverProcess->setWorkingDirectory(settings->xmageInstallLocation + "/mage-server");
+        serverProcess->setWorkingDirectory(serverDir);
         QStringList arguments = settings->currentServerOptions;
         arguments << "-jar" << serverJar;
         serverProcess->start(settings->javaInstallLocation, arguments);
@@ -573,30 +526,173 @@ bool MainWindow::validateJavaSettings()
 
 bool MainWindow::findClientJar(QString *jar)
 {
-    QDir clientDir(settings->xmageInstallLocation + "/mage-client/lib");
+    QString buildPath = settings->getCurrentBuildInstallPath();
     QStringList filter;
     filter << "mage-client*.jar";
-    QFileInfoList infoList = clientDir.entryInfoList(filter, QDir::Files);
-    if (infoList.isEmpty())
+
+    // Try direct path first, then xmage subfolder
+    QStringList searchPaths;
+    searchPaths << buildPath + "/mage-client/lib";
+    searchPaths << buildPath + "/xmage/mage-client/lib";
+
+    for (const QString &clientLibPath : searchPaths)
     {
-        QMessageBox::warning(this, "Invalid XMage Configuration", "Unable to find XMage client jar file. Please download XMage first.");
-        return false;
+        QDir clientDir(clientLibPath);
+        QFileInfoList infoList = clientDir.entryInfoList(filter, QDir::Files);
+        if (!infoList.isEmpty())
+        {
+            *jar = infoList.at(0).absoluteFilePath();
+            return true;
+        }
     }
-    *jar = infoList.at(0).absoluteFilePath();
-    return true;
+
+    log("ERROR: No client jar found in: " + searchPaths.join(" or "));
+    QMessageBox::warning(this, "Invalid XMage Configuration", "Unable to find XMage client jar file.\n\nPlease download XMage first.");
+    return false;
 }
 
 bool MainWindow::findServerJar(QString *jar)
 {
-    QDir clientDir(settings->xmageInstallLocation + "/mage-server/lib");
+    QString buildPath = settings->getCurrentBuildInstallPath();
     QStringList filter;
     filter << "mage-server*.jar";
-    QFileInfoList infoList = clientDir.entryInfoList(filter, QDir::Files);
-    if (infoList.isEmpty())
+
+    // Try direct path first, then xmage subfolder
+    QStringList searchPaths;
+    searchPaths << buildPath + "/mage-server/lib";
+    searchPaths << buildPath + "/xmage/mage-server/lib";
+
+    for (const QString &serverLibPath : searchPaths)
     {
-        QMessageBox::warning(this, "Invalid XMage Configuration", "Unable to find XMage server jar file. Please download XMage first.");
+        QDir serverDir(serverLibPath);
+        QFileInfoList infoList = serverDir.entryInfoList(filter, QDir::Files);
+        if (!infoList.isEmpty())
+        {
+            *jar = infoList.at(0).absoluteFilePath();
+            return true;
+        }
+    }
+
+    log("ERROR: No server jar found in: " + searchPaths.join(" or "));
+    QMessageBox::warning(this, "Invalid XMage Configuration", "Unable to find XMage server jar file.\n\nPlease download XMage first.");
+    return false;
+}
+
+void MainWindow::fetchConfig()
+{
+    if (configFetching)
+    {
+        log("Config fetch already in progress...");
+        return;
+    }
+
+    configFetching = true;
+    ui->updateButton->setEnabled(false);
+    log("Fetching config for build: " + settings->currentBuildName);
+    log("  URL: " + settings->getCurrentBuildUrl());
+
+    if (configNetworkManager == nullptr)
+    {
+        configNetworkManager = new QNetworkAccessManager(this);
+    }
+    else
+    {
+        configNetworkManager->disconnect();
+    }
+
+    connect(configNetworkManager, &QNetworkAccessManager::finished, this, &MainWindow::onConfigFetched);
+    QNetworkRequest request(QUrl(settings->getCurrentBuildUrl()));
+    configNetworkManager->get(request);
+}
+
+void MainWindow::onConfigFetched(QNetworkReply *reply)
+{
+    configNetworkManager->disconnect();
+    configFetching = false;
+    ui->updateButton->setEnabled(true);
+
+    if (reply->error() != QNetworkReply::NoError)
+    {
+        log("Failed to fetch config: " + reply->errorString());
+        reply->deleteLater();
+        return;
+    }
+
+    QByteArray data = reply->readAll();
+    reply->deleteLater();
+
+    // Validate JSON before saving
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    if (doc.isNull() || !doc.isObject())
+    {
+        log("Error: Invalid JSON in config response");
+        return;
+    }
+
+    // Save to build folder
+    QString buildPath = settings->getCurrentBuildInstallPath();
+    QDir().mkpath(buildPath);
+    QString configPath = buildPath + "/config.json";
+
+    QFile file(configPath);
+    if (!file.open(QIODevice::WriteOnly))
+    {
+        log("Error: Could not write config to " + configPath);
+        return;
+    }
+    file.write(data);
+    file.close();
+
+    // Log version info from config
+    QJsonObject root = doc.object();
+    QJsonObject xmageObj = root.value("XMage").toObject();
+    QString version = xmageObj.value("version").toString();
+    if (!version.isEmpty())
+    {
+        log("Latest XMage version: " + version);
+    }
+
+    log("Config saved for build: " + settings->currentBuildName);
+    updateLaunchReadiness();
+}
+
+void MainWindow::updateLaunchReadiness()
+{
+    QString buildPath = settings->getCurrentBuildInstallPath();
+    bool hasXmage = QDir(buildPath + "/mage-client/lib").exists() ||
+                    QDir(buildPath + "/xmage/mage-client/lib").exists();
+    QFileInfo javaInfo(settings->javaInstallLocation);
+    bool hasJava = javaInfo.isExecutable();
+
+    // Get version from cached config
+    QString version;
+    QJsonObject config;
+    if (loadCachedConfig(&config))
+    {
+        version = config.value("XMage").toObject().value("version").toString();
+    }
+
+    log("Build: " + settings->currentBuildName);
+    log("  Base path: " + settings->basePath);
+    log("  Config: " + (version.isEmpty() ? "not fetched" : version));
+    log("  XMage: " + QString(hasXmage ? "installed" : "not installed"));
+    log("  Java: " + QString(hasJava ? "ready" : "not installed"));
+}
+
+bool MainWindow::loadCachedConfig(QJsonObject *config)
+{
+    QString configPath = settings->getCurrentBuildInstallPath() + "/config.json";
+    QFile file(configPath);
+    if (!file.open(QIODevice::ReadOnly))
+    {
         return false;
     }
-    *jar = infoList.at(0).absoluteFilePath();
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    file.close();
+    if (doc.isNull() || !doc.isObject())
+    {
+        return false;
+    }
+    *config = doc.object();
     return true;
 }

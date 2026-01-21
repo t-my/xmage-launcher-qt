@@ -1,47 +1,51 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QMap>
 #include <QString>
 #include <QStringList>
 #include <QSettings>
+#include <QList>
+#include <QDir>
+#include <QCoreApplication>
+#include <QStandardPaths>
+#include <QFileInfo>
 
-struct XMageVersion
-{
-    QString version;
+struct Build {
+    QString name;
+    QString url;
 };
-
-Q_DECLARE_METATYPE(XMageVersion);
 
 class Settings
 {
 public:
     Settings();
     QSettings diskSettings { "xmage", "xmage-launcher-qt" };
-    QString xmageInstallLocation { diskSettings.value("xmageInstallLocation").toString() };
     QString javaInstallLocation { diskSettings.value("javaInstallLocation").toString() };
-    QString configUrl { diskSettings.value("configUrl", "http://xmage.today/config.json").toString() };
-    QStringList configUrls;
-    QMap<QString, XMageVersion> xmageInstallations;
+    QList<Build> builds;
+    QString currentBuildName;
     QStringList defaultClientOptions;
     QStringList defaultServerOptions;
     QStringList currentClientOptions;
     QStringList currentServerOptions;
+    QString basePath;  // Base path for all installations (java/ and xmage-*/ folders)
 
-    void addXmageInstallation(QString location, XMageVersion &version);
-    void setXmageInstallLocation(QString location);
     void setJavaInstallLocation(QString location);
-    void setConfigUrl(QString url);
-    void addConfigUrl(QString url);
-    void removeConfigUrl(QString url);
     void setClientOptions(QString options);
     void setServerOptions(QString options);
 
+    // Build management
+    QString getCurrentBuildUrl() const;
+    QString getBuildInstallPath(const QString &buildName) const;
+    QString getCurrentBuildInstallPath() const;
+    void setCurrentBuild(const QString &buildName);
+    void addBuild(const QString &name, const QString &url);
+    void removeBuild(const QString &name);
+    bool isDefaultBuild(const QString &name) const;
+
 private:
-    void saveXmageInstallation();
-    void saveConfigUrls();
+    void saveBuilds();
+    void loadBuilds();
+    void computeBasePath();
     QStringList stringToList(QString str);
 };
 
