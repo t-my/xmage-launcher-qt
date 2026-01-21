@@ -9,7 +9,6 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    src/aboutdialog.cpp \
     src/downloadmanager.cpp \
     src/zipextractthread.cpp \
     src/main.cpp \
@@ -20,7 +19,6 @@ SOURCES += \
     src/xmageprocess.cpp
 
 HEADERS += \
-    src/aboutdialog.h \
     src/downloadmanager.h \
     src/zipextractthread.h \
     src/mainwindow.h \
@@ -31,8 +29,7 @@ HEADERS += \
 
 FORMS += \
     forms/mainwindow.ui \
-    forms/settingsdialog.ui \
-    forms/aboutdialog.ui
+    forms/settingsdialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

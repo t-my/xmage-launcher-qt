@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     this->setFixedSize(this->size());
     QString imageName = QString::number(QRandomGenerator::global()->bounded(1, 17)) + ".jpg";
     QPixmap backgroundImage(":/backgrounds/" + imageName);
-    background->setGeometry(0, ui->menubar->size().height(), this->size().width(), this->size().height() - ui->menubar->size().height());
+    background->setGeometry(0, 0, this->size().width(), this->size().height());
     background->setPixmap(backgroundImage.scaled(background->size()));
     background->lower();
     clientConsole->setWindowTitle("XMage Client Console");
@@ -31,7 +31,6 @@ MainWindow::MainWindow(QWidget *parent)
     serverConsole->setGeometry(0, 0, 860, 480);
     serverConsole->setStyleSheet("background-color:black; color:white;");
     serverConsole->setReadOnly(true);
-    aboutDialog = new AboutDialog(this);
 
     // Log startup info and check launch readiness
     updateLaunchReadiness();
@@ -51,7 +50,6 @@ MainWindow::~MainWindow()
     {
         delete configNetworkManager;
     }
-    delete aboutDialog;
     delete settings;
     delete background;
     delete ui;
@@ -105,12 +103,17 @@ void MainWindow::on_serverButton_clicked()
 
 void MainWindow::on_clientServerButton_clicked()
 {
-    launchServer();
-    launchClient();
+    on_actionSettings_triggered();
 }
 
 void MainWindow::on_downloadButton_clicked()
 {
+    if (javaDownloading)
+    {
+        log("Download already in progress...");
+        return;
+    }
+
     QJsonObject config;
     if (!loadCachedConfig(&config))
     {
@@ -118,48 +121,50 @@ void MainWindow::on_downloadButton_clicked()
         return;
     }
 
+    ui->downloadButton->setEnabled(false);
+    ui->updateButton->setEnabled(false);
+    ui->progressBar->show();
+
+    // Check if Java is installed
+    QFileInfo javaInfo(settings->javaInstallLocation);
+    if (!javaInfo.isExecutable())
+    {
+        // Need to download Java first
+        QJsonObject javaObj = config.value("java").toObject();
+        javaVersion = javaObj.value("version").toString();
+        javaBaseUrl = javaObj.value("location").toString();
+
+        if (javaBaseUrl.isEmpty())
+        {
+            log("Error: No Java download URL in config");
+            ui->downloadButton->setEnabled(true);
+            ui->updateButton->setEnabled(true);
+            ui->progressBar->hide();
+            return;
+        }
+
+        log("Java not found, downloading Java first...");
+        javaDownloading = true;
+        downloadXmageAfterJava = true;  // Continue with XMage after Java completes
+        startJavaDownload();
+        return;
+    }
+
+    // Java is installed, proceed with XMage download
+    startXmageDownload(config);
+}
+
+void MainWindow::startXmageDownload(const QJsonObject &config)
+{
     QJsonObject xmageObj = config.value("XMage").toObject();
     QString downloadUrl = xmageObj.value("full").toString();
     QString version = xmageObj.value("version").toString();
     QString downloadLocation = settings->getCurrentBuildInstallPath();
     QDir().mkpath(downloadLocation);
 
-    ui->downloadButton->setEnabled(false);
-    ui->updateButton->setEnabled(false);
-    ui->progressBar->show();
     log("Downloading XMage " + version + " to: " + downloadLocation);
     DownloadManager *downloadManager = new DownloadManager(downloadLocation, this);
     downloadManager->downloadXmageFromUrl(downloadUrl, version);
-}
-
-void MainWindow::on_javaButton_clicked()
-{
-    if (javaDownloading)
-    {
-        log("Java download already in progress...");
-        return;
-    }
-
-    QJsonObject config;
-    if (!loadCachedConfig(&config))
-    {
-        QMessageBox::warning(this, "No Config", "No cached config. Click 'Check Updates' first.");
-        return;
-    }
-
-    QJsonObject javaObj = config.value("java").toObject();
-    javaVersion = javaObj.value("version").toString();
-    javaBaseUrl = javaObj.value("location").toString();
-
-    if (javaBaseUrl.isEmpty())
-    {
-        QMessageBox::warning(this, "No Java URL", "No Java download URL in config.");
-        return;
-    }
-
-    javaDownloading = true;
-    ui->javaButton->setEnabled(false);
-    startJavaDownload();
 }
 
 QString MainWindow::getJavaPlatformSuffix()
@@ -354,17 +359,38 @@ void MainWindow::extractJava(const QString &filePath)
 void MainWindow::javaDownloadComplete()
 {
     javaDownloading = false;
-    ui->javaButton->setEnabled(true);
+    ui->progressBar->setFormat("%p%");
+
+    // If we were downloading Java as part of XMage download, continue with XMage
+    if (downloadXmageAfterJava)
+    {
+        downloadXmageAfterJava = false;
+        QJsonObject config;
+        if (loadCachedConfig(&config))
+        {
+            log("Java installed, now downloading XMage...");
+            startXmageDownload(config);
+            return;
+        }
+        else
+        {
+            log("Error: Could not load cached config for XMage download");
+        }
+    }
+
     ui->progressBar->hide();
     ui->progressBar->setValue(0);
-    ui->progressBar->setFormat("%p%");
+    ui->downloadButton->setEnabled(true);
+    ui->updateButton->setEnabled(true);
 }
 
 void MainWindow::javaDownloadFailed(const QString &error)
 {
     log("Java download error: " + error);
     javaDownloading = false;
-    ui->javaButton->setEnabled(true);
+    downloadXmageAfterJava = false;
+    ui->downloadButton->setEnabled(true);
+    ui->updateButton->setEnabled(true);
     ui->progressBar->hide();
     ui->progressBar->setValue(0);
     ui->progressBar->setFormat("%p%");
@@ -397,58 +423,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
     event->accept();
 }
 
-void MainWindow::on_actionQuit_triggered()
-{
-    this->close();
-}
-
-void MainWindow::on_actionAbout_triggered()
-{
-    aboutDialog->open();
-}
-
-void MainWindow::on_actionAbout_Qt_triggered()
-{
-    QMessageBox::aboutQt(this);
-}
-
-void MainWindow::on_actionForum_triggered()
-{
-    load_browser("https://www.slightlymagic.net/forum/viewforum.php?f=70");
-}
-
-void MainWindow::on_actionWebsite_triggered()
-{
-    load_browser("http://xmage.de/");
-}
-
-void MainWindow::on_actionGitHub_XMage_triggered()
-{
-    load_browser("https://github.com/magefree/mage");
-}
-
-void MainWindow::on_actionGitHub_xmage_launcher_qt_triggered()
-{
-    load_browser("https://github.com/weirddan455/xmage-launcher-qt");
-}
-
-void MainWindow::load_browser(const QString &url)
-{
-    if (QDesktopServices::openUrl(QUrl(url)))
-    {
-        log("Loading " + url + " in default web browser");
-    }
-    else
-    {
-        log("Failed to open web browser for " + url);
-    }
-}
-
 void MainWindow::server_finished()
 {
     serverProcess = nullptr;
     ui->serverButton->setText("Launch Server");
-    ui->clientServerButton->setEnabled(true);
 }
 
 void MainWindow::launchClient()
@@ -489,7 +467,6 @@ void MainWindow::launchServer()
         log("  Build: " + settings->currentBuildName);
         log("  Server dir: " + serverDir);
         ui->serverButton->setText("Stop Server");
-        ui->clientServerButton->setEnabled(false);
         serverConsole->show();
         serverProcess = new XMageProcess(serverConsole);
         connect(serverProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &MainWindow::server_finished);

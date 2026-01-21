@@ -24,11 +24,17 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>690</x>
+      <x>530</x>
       <y>570</y>
-      <width>111</width>
+      <width>121</width>
       <height>41</height>
      </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+QPushButton:hover { background-color: #4d4d4d; }
+QPushButton:pressed { background-color: #2d2d2d; }
+QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
     </property>
     <property name="text">
      <string>Check Updates</string>
@@ -45,6 +51,12 @@
       <width>111</width>
       <height>41</height>
      </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+QPushButton:hover { background-color: #4d4d4d; }
+QPushButton:pressed { background-color: #2d2d2d; }
+QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
     </property>
     <property name="text">
      <string>Launch Client</string>
@@ -92,11 +104,17 @@ color: white;</string>
     </property>
     <property name="geometry">
      <rect>
-      <x>850</x>
+      <x>670</x>
       <y>570</y>
-      <width>111</width>
+      <width>291</width>
       <height>41</height>
      </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+QPushButton:hover { background-color: #4d4d4d; }
+QPushButton:pressed { background-color: #2d2d2d; }
+QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
     </property>
     <property name="text">
      <string>Download XMage</string>
@@ -130,6 +148,12 @@ color: white;</string>
       <height>41</height>
      </rect>
     </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+QPushButton:hover { background-color: #4d4d4d; }
+QPushButton:pressed { background-color: #2d2d2d; }
+QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
+    </property>
     <property name="text">
      <string>Launch Server</string>
     </property>
@@ -143,106 +167,17 @@ color: white;</string>
       <height>41</height>
      </rect>
     </property>
-    <property name="text">
-     <string>Launch Client and Server</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="javaButton">
-    <property name="geometry">
-     <rect>
-      <x>530</x>
-      <y>570</y>
-      <width>111</width>
-      <height>41</height>
-     </rect>
+    <property name="styleSheet">
+     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+QPushButton:hover { background-color: #4d4d4d; }
+QPushButton:pressed { background-color: #2d2d2d; }
+QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
     </property>
     <property name="text">
-     <string>Get Java</string>
+     <string>Settings</string>
     </property>
    </widget>
   </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>998</width>
-     <height>19</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>File</string>
-    </property>
-    <addaction name="actionQuit"/>
-   </widget>
-   <widget class="QMenu" name="menuTools">
-    <property name="title">
-     <string>Tools</string>
-    </property>
-    <addaction name="actionSettings"/>
-   </widget>
-   <widget class="QMenu" name="menuLinks">
-    <property name="title">
-     <string>Links</string>
-    </property>
-    <addaction name="actionForum"/>
-    <addaction name="actionWebsite"/>
-    <addaction name="actionGitHub_XMage"/>
-    <addaction name="actionGitHub_xmage_launcher_qt"/>
-   </widget>
-   <widget class="QMenu" name="menuHelp">
-    <property name="title">
-     <string>Help</string>
-    </property>
-    <addaction name="actionAbout"/>
-    <addaction name="actionAbout_Qt"/>
-   </widget>
-   <addaction name="menuFile"/>
-   <addaction name="menuTools"/>
-   <addaction name="menuLinks"/>
-   <addaction name="menuHelp"/>
-  </widget>
-  <action name="actionQuit">
-   <property name="text">
-    <string>Quit</string>
-   </property>
-  </action>
-  <action name="actionSettings">
-   <property name="text">
-    <string>Settings</string>
-   </property>
-  </action>
-  <action name="actionForum">
-   <property name="text">
-    <string>Forum</string>
-   </property>
-  </action>
-  <action name="actionWebsite">
-   <property name="text">
-    <string>Website</string>
-   </property>
-  </action>
-  <action name="actionAbout">
-   <property name="text">
-    <string>About</string>
-   </property>
-  </action>
-  <action name="actionAbout_Qt">
-   <property name="text">
-    <string>About Qt</string>
-   </property>
-  </action>
-  <action name="actionGitHub_XMage">
-   <property name="text">
-    <string>GitHub (XMage)</string>
-   </property>
-  </action>
-  <action name="actionGitHub_xmage_launcher_qt">
-   <property name="text">
-    <string>GitHub (xmage-launcher-qt)</string>
-   </property>
-  </action>
  </widget>
  <resources>
   <include location="../resources/resources.qrc"/>

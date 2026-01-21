@@ -9,7 +9,6 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QStandardPaths>
-#include <QDesktopServices>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QSaveFile>
@@ -18,7 +17,6 @@
 #include <QProcess>
 #include <QFile>
 #include <QDir>
-#include "aboutdialog.h"
 #include "settingsdialog.h"
 #include "settings.h"
 #include "xmageprocess.h"
@@ -40,7 +38,6 @@ public slots:
     void log(QString message);
     void download_fail(QString errorMessage);
     void download_success(QString installLocation);
-    void load_browser(const QString &url);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -51,15 +48,7 @@ private slots:
     void on_clientServerButton_clicked();
     void on_serverButton_clicked();
     void on_downloadButton_clicked();
-    void on_javaButton_clicked();
     void on_actionSettings_triggered();
-    void on_actionQuit_triggered();
-    void on_actionAbout_Qt_triggered();
-    void on_actionAbout_triggered();
-    void on_actionForum_triggered();
-    void on_actionGitHub_XMage_triggered();
-    void on_actionGitHub_xmage_launcher_qt_triggered();
-    void on_actionWebsite_triggered();
     void server_finished();
 
     // Java download slots
@@ -76,7 +65,6 @@ private:
     Settings *settings;
     QPlainTextEdit *clientConsole;
     QPlainTextEdit *serverConsole;
-    AboutDialog *aboutDialog;
     XMageProcess *serverProcess = nullptr;
 
     // Java download members
@@ -86,6 +74,7 @@ private:
     QString javaBaseUrl;
     QString javaVersion;
     bool javaDownloading = false;
+    bool downloadXmageAfterJava = false;  // Flag to continue with XMage download after Java
 
     // Config fetch members
     QNetworkAccessManager *configNetworkManager = nullptr;
@@ -100,6 +89,7 @@ private:
 
     // Java download methods
     void startJavaDownload();
+    void startXmageDownload(const QJsonObject &config);
     QString getJavaPlatformSuffix();
     void extractJava(const QString &filePath);
     void javaDownloadComplete();
