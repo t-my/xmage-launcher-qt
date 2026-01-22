@@ -159,6 +159,16 @@ void MainWindow::startXmageDownload(const QJsonObject &config)
     QJsonObject xmageObj = config.value("XMage").toObject();
     QString downloadUrl = xmageObj.value("full").toString();
     QString version = xmageObj.value("version").toString();
+
+    if (downloadUrl.isEmpty())
+    {
+        log("Error: No XMage download URL in config");
+        ui->downloadButton->setEnabled(true);
+        ui->updateButton->setEnabled(true);
+        ui->progressBar->hide();
+        return;
+    }
+
     QString downloadLocation = settings->getCurrentBuildInstallPath();
     QDir().mkpath(downloadLocation);
 
@@ -641,6 +651,19 @@ void MainWindow::updateLaunchReadiness()
     QFileInfo javaInfo(settings->javaInstallLocation);
     bool hasJava = javaInfo.isExecutable();
 
+    // Enable/disable launch buttons based on readiness
+    bool canLaunch = hasXmage && hasJava;
+
+    if (canLaunch) 
+    {
+        ui->clientButton->setEnabled(canLaunch);
+        ui->serverButton->setEnabled(canLaunch);
+    } else 
+    {
+        ui->clientButton->setEnabled(false);
+        ui->serverButton->setEnabled(false);
+    }
+    
     // Get version from cached config
     QString version;
     QJsonObject config;

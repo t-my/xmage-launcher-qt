@@ -155,7 +155,7 @@ QString Settings::getCurrentBuildUrl() const
 
 QString Settings::getBuildInstallPath(const QString &buildName) const
 {
-    return basePath + "/xmage-" + buildName;
+    return basePath + "/builds/" + buildName;
 }
 
 QString Settings::getCurrentBuildInstallPath() const
