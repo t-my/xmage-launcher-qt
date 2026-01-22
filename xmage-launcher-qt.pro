@@ -45,7 +45,19 @@ macx {
     ICON = resources/icon-mage.icns
 
     # Automatically deploy Qt frameworks and sign the app bundle after build
-    QMAKE_POST_LINK += macdeployqt $${TARGET}.app && codesign --force --deep --sign - $${TARGET}.app
+    # Use -no-plugins to avoid errors from optional Qt modules, then manually copy needed plugins
+    QMAKE_POST_LINK += macdeployqt $${TARGET}.app -no-plugins && \
+        mkdir -p $${TARGET}.app/Contents/PlugIns/platforms && \
+        mkdir -p $${TARGET}.app/Contents/PlugIns/styles && \
+        mkdir -p $${TARGET}.app/Contents/PlugIns/imageformats && \
+        cp -n /opt/homebrew/share/qt/plugins/platforms/libqcocoa.dylib $${TARGET}.app/Contents/PlugIns/platforms/ && \
+        cp -n /opt/homebrew/share/qt/plugins/styles/libqmacstyle.dylib $${TARGET}.app/Contents/PlugIns/styles/ 2>/dev/null || true && \
+        cp -n /opt/homebrew/share/qt/plugins/imageformats/libqjpeg.dylib $${TARGET}.app/Contents/PlugIns/imageformats/ && \
+        macdeployqt $${TARGET}.app -no-plugins && \
+        codesign --force --deep --sign - $${TARGET}.app
+
+    # Clean up .app bundle on make clean
+    QMAKE_CLEAN += -r $${TARGET}.app
 }
 linux {
     LIBS += -lzip
