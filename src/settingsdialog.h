@@ -2,8 +2,11 @@
 #define SETTINGSDIALOG_H
 
 #include <QDialog>
-#include <QInputDialog>
 #include <QMessageBox>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QDialogButtonBox>
 #include "settings.h"
 
 namespace Ui {
