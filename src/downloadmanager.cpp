@@ -24,6 +24,8 @@ void DownloadManager::downloadXmage(QString configUrl)
     mainWindow->log("Fetching XMage version info from " + configUrl + "...");
     QUrl url(configUrl);
     QNetworkRequest request(url);
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
     networkManager->get(request);
 }
 

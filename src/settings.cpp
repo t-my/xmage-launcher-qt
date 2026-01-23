@@ -86,13 +86,13 @@ void Settings::loadBuilds()
 
     if (!hasOfficial)
     {
-        builds.prepend({"official", "http://xmage.today/config.json"});
+        builds.prepend({"official", "https://xmage.today/config.json"});
     }
     if (!hasXdhs)
     {
         // Insert xdhs as second item if official is first
         int insertPos = (builds.isEmpty() || builds.first().name != "official") ? 0 : 1;
-        builds.insert(insertPos, {"xdhs", "http://xdhs.net/xmage/config.json"});
+        builds.insert(insertPos, {"xdhs", "https://xdhs.net/xmage/config.json"});
     }
 
     // Ensure current build exists in the list

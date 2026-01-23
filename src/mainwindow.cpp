@@ -589,6 +589,8 @@ void MainWindow::fetchConfig()
 
     connect(configNetworkManager, &QNetworkAccessManager::finished, this, &MainWindow::onConfigFetched);
     QNetworkRequest request(QUrl(settings->getCurrentBuildUrl()));
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
     configNetworkManager->get(request);
 }
 
