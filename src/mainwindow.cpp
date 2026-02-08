@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "downloadmanager.h"
+#include "unzipthread.h"
 #include "zipextractthread.h"
 #include <QCoreApplication>
 
@@ -49,6 +50,14 @@ MainWindow::~MainWindow()
     if (configNetworkManager != nullptr)
     {
         delete configNetworkManager;
+    }
+    if (decksSaveFile != nullptr)
+    {
+        delete decksSaveFile;
+    }
+    if (decksNetworkManager != nullptr)
+    {
+        delete decksNetworkManager;
     }
     delete settings;
     delete background;
@@ -404,6 +413,153 @@ void MainWindow::javaDownloadFailed(const QString &error)
     ui->progressBar->hide();
     ui->progressBar->setValue(0);
     ui->progressBar->setFormat("%p%");
+}
+
+void MainWindow::on_decksButton_clicked()
+{
+    if (decksDownloading)
+    {
+        log("Decks download already in progress...");
+        return;
+    }
+
+    decksDownloading = true;
+    ui->decksButton->setEnabled(false);
+    ui->progressBar->show();
+    ui->progressBar->setValue(0);
+
+    QString url = "https://github.com/t-my/metagame-decks/releases/latest/download/metagame-decks.zip";
+    QString fileName = settings->basePath + "/metagame-decks.zip";
+
+    log("Downloading metagame decks from " + url);
+
+    if (decksNetworkManager == nullptr)
+    {
+        decksNetworkManager = new QNetworkAccessManager(this);
+    }
+    else
+    {
+        decksNetworkManager->disconnect();
+    }
+
+    decksSaveFile = new QSaveFile(fileName);
+    if (!decksSaveFile->open(QIODevice::WriteOnly))
+    {
+        log("Failed to create file: " + fileName);
+        delete decksSaveFile;
+        decksSaveFile = nullptr;
+        decksDownloading = false;
+        ui->decksButton->setEnabled(true);
+        ui->progressBar->hide();
+        return;
+    }
+
+    QUrl downloadUrl(url);
+    QNetworkRequest request(downloadUrl);
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
+
+    connect(decksNetworkManager, &QNetworkAccessManager::finished, this, &MainWindow::onDecksDownloadFinished);
+    decksDownloadReply = decksNetworkManager->get(request);
+    connect(decksDownloadReply, &QNetworkReply::downloadProgress, this, &MainWindow::onDecksDownloadProgress);
+    connect(decksDownloadReply, &QNetworkReply::readyRead, this, &MainWindow::onDecksDownloadReadyRead);
+}
+
+void MainWindow::onDecksDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
+{
+    if (bytesTotal > 0)
+    {
+        int percent = static_cast<int>((bytesReceived * 100) / bytesTotal);
+        ui->progressBar->setValue(percent);
+        ui->progressBar->setFormat(QString("Downloading decks... %1 MB / %2 MB")
+                                       .arg(bytesReceived / 1048576.0, 0, 'f', 1)
+                                       .arg(bytesTotal / 1048576.0, 0, 'f', 1));
+    }
+}
+
+void MainWindow::onDecksDownloadReadyRead()
+{
+    if (decksSaveFile && decksDownloadReply)
+    {
+        decksSaveFile->write(decksDownloadReply->readAll());
+    }
+}
+
+void MainWindow::onDecksDownloadFinished(QNetworkReply *reply)
+{
+    decksNetworkManager->disconnect();
+    decksDownloadReply = nullptr;
+
+    if (reply->error() != QNetworkReply::NoError)
+    {
+        if (decksSaveFile)
+        {
+            decksSaveFile->cancelWriting();
+            delete decksSaveFile;
+            decksSaveFile = nullptr;
+        }
+        log("Decks download failed: " + reply->errorString());
+        decksDownloading = false;
+        ui->decksButton->setEnabled(true);
+        ui->progressBar->hide();
+        ui->progressBar->setValue(0);
+        ui->progressBar->setFormat("%p%");
+        reply->deleteLater();
+        return;
+    }
+
+    if (decksSaveFile)
+    {
+        decksSaveFile->write(reply->readAll());
+        QString fileName = decksSaveFile->fileName();
+
+        if (decksSaveFile->commit())
+        {
+            log("Download complete. Extracting decks...");
+            ui->progressBar->setValue(100);
+            ui->progressBar->setFormat("Extracting...");
+
+            // Clean old decks before extracting
+            QDir(settings->basePath + "/decks").removeRecursively();
+
+            UnzipThread *unzip = new UnzipThread(fileName, settings->basePath, false);
+            connect(unzip, &UnzipThread::log, this, &MainWindow::log);
+            connect(unzip, &UnzipThread::progress, this, &MainWindow::update_progress_bar);
+            connect(unzip, &UnzipThread::unzip_fail, this, [this, fileName](QString error) {
+                log("Decks extraction failed: " + error);
+                decksDownloading = false;
+                ui->decksButton->setEnabled(true);
+                ui->progressBar->hide();
+                ui->progressBar->setValue(0);
+                ui->progressBar->setFormat("%p%");
+                QFile::remove(fileName);
+            });
+            connect(unzip, &UnzipThread::unzip_complete, this, [this, fileName](QString location) {
+                log("Metagame decks installed to: " + location);
+                decksDownloading = false;
+                ui->decksButton->setEnabled(true);
+                ui->progressBar->hide();
+                ui->progressBar->setValue(0);
+                ui->progressBar->setFormat("%p%");
+                QFile::remove(fileName);
+            });
+            connect(unzip, &UnzipThread::finished, unzip, &QObject::deleteLater);
+            unzip->start();
+        }
+        else
+        {
+            log("Failed to save decks file");
+            decksDownloading = false;
+            ui->decksButton->setEnabled(true);
+            ui->progressBar->hide();
+            ui->progressBar->setValue(0);
+            ui->progressBar->setFormat("%p%");
+        }
+        delete decksSaveFile;
+        decksSaveFile = nullptr;
+    }
+
+    reply->deleteLater();
 }
 
 void MainWindow::update_progress_bar(qint64 bytesReceived, qint64 bytesTotal)

@@ -1,9 +1,10 @@
 #include "unzipthread.h"
 
-UnzipThread::UnzipThread(QString fileName, QString destPath)
+UnzipThread::UnzipThread(QString fileName, QString destPath, bool stripRoot)
 {
     this->fileName = fileName;
     this->destPath = destPath;
+    this->stripRoot = stripRoot;
 }
 
 void UnzipThread::run()
@@ -31,7 +32,7 @@ void UnzipThread::run()
     // Determine if zip has a root folder we need to skip
     // Check all entries to find common root directory prefix
     QString rootFolder;
-    if (numEntries > 0)
+    if (stripRoot && numEntries > 0)
     {
         QString commonPrefix;
         bool hasCommonRoot = true;

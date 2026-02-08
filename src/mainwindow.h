@@ -49,6 +49,7 @@ private slots:
     void on_serverButton_clicked();
     void on_downloadButton_clicked();
     void on_actionSettings_triggered();
+    void on_decksButton_clicked();
     void server_finished();
 
     // Java download slots
@@ -58,6 +59,11 @@ private slots:
 
     // Config fetch slot
     void onConfigFetched(QNetworkReply *reply);
+
+    // Decks download slots
+    void onDecksDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+    void onDecksDownloadFinished(QNetworkReply *reply);
+    void onDecksDownloadReadyRead();
 
 private:
     Ui::MainWindow *ui;
@@ -79,6 +85,12 @@ private:
     // Config fetch members
     QNetworkAccessManager *configNetworkManager = nullptr;
     bool configFetching = false;
+
+    // Decks download members
+    QNetworkAccessManager *decksNetworkManager = nullptr;
+    QNetworkReply *decksDownloadReply = nullptr;
+    QSaveFile *decksSaveFile = nullptr;
+    bool decksDownloading = false;
 
     bool validateJavaSettings();
     bool findClientJar(QString *jar);

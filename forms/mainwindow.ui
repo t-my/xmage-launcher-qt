@@ -177,6 +177,25 @@ QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
      <string>Settings</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="decksButton">
+    <property name="geometry">
+     <rect>
+      <x>810</x>
+      <y>525</y>
+      <width>171</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+QPushButton:hover { background-color: #4d4d4d; }
+QPushButton:pressed { background-color: #2d2d2d; }
+QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
+    </property>
+    <property name="text">
+     <string>Metagame Decks</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources>

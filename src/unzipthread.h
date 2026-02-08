@@ -14,12 +14,13 @@ class UnzipThread : public QThread
 {
     Q_OBJECT
 public:
-    UnzipThread(QString fileName, QString destPath);
+    UnzipThread(QString fileName, QString destPath, bool stripRoot = true);
     void run() override;
 
 private:
     QString fileName;
     QString destPath;
+    bool stripRoot;
 
 signals:
     void log(QString message);
