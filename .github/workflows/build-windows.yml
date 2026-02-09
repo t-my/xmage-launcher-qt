@@ -82,6 +82,7 @@ jobs:
           cp /mingw64/bin/libicuin*.dll dist/
           cp /mingw64/bin/libicuuc*.dll dist/
           cp /mingw64/bin/libicudt*.dll dist/
+          cp settings.json dist/
           mkdir -p dist/java
           mkdir -p dist/xmage
           cd dist

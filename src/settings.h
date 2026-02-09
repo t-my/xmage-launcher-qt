@@ -26,6 +26,7 @@ public:
     QStringList currentClientOptions;
     QStringList currentServerOptions;
     QString basePath;  // Base path for all installations (java/ and xmage-*/ folders)
+    QString loadError;  // Non-empty if settings.json failed to load
 
     void setJavaInstallLocation(QString location);
 

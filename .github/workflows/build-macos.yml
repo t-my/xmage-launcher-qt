@@ -36,6 +36,7 @@ jobs:
         run: |
           mkdir -p dist
           cp -R build/xmage-launcher-qt.app dist/
+          cp settings.json dist/
           mkdir -p dist/java
           mkdir -p dist/xmage
           cd dist

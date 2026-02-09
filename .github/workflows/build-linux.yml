@@ -126,6 +126,7 @@ jobs:
         run: |
           mkdir -p dist
           cp build/XMage_Launcher-x86_64.AppImage dist/
+          cp settings.json dist/
           mkdir -p dist/java
           mkdir -p dist/xmage
           cd dist

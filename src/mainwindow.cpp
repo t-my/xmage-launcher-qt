@@ -34,6 +34,11 @@ MainWindow::MainWindow(QWidget *parent)
     serverConsole->setReadOnly(true);
 
     // Log startup info and check launch readiness
+    if (!settings->loadError.isEmpty())
+    {
+        log("ERROR: " + settings->loadError);
+        QMessageBox::critical(this, "Configuration Error", settings->loadError);
+    }
     updateLaunchReadiness();
 }
 

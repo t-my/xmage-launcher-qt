@@ -82,6 +82,7 @@ jobs:
           cp /mingw64/bin/libicuin*.dll dist/
           cp /mingw64/bin/libicuuc*.dll dist/
           cp /mingw64/bin/libicudt*.dll dist/
+          cp settings.json dist/
           mkdir -p dist/java
           mkdir -p dist/xmage
           cd dist
@@ -125,6 +126,7 @@ jobs:
         run: |
           mkdir -p dist
           cp -R build/xmage-launcher-qt.app dist/
+          cp settings.json dist/
           mkdir -p dist/java
           mkdir -p dist/xmage
           cd dist
@@ -240,6 +242,7 @@ jobs:
         run: |
           mkdir -p dist
           cp build/XMage_Launcher-x86_64.AppImage dist/
+          cp settings.json dist/
           mkdir -p dist/java
           mkdir -p dist/xmage
           cd dist

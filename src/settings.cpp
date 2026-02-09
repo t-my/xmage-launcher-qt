@@ -58,12 +58,7 @@ void Settings::loadSettingsJson()
     QFile file(jsonPath);
     if (!file.open(QIODevice::ReadOnly))
     {
-        // Fallback defaults if settings.json not found
-        currentClientOptions << "-Xms256m" << "-Xmx512m" << "-Dfile.encoding=UTF-8";
-        currentServerOptions << "-Xms256m" << "-Xmx1g" << "-Dfile.encoding=UTF-8";
-        builds.append(Build{"official", "https://xmage.today/config.json"});
-        builds.append(Build{"xdhs", "https://xdhs.net/xmage/config.json"});
-        builds.append(Build{"t-my", "https://t-my.github.io/mage/config.json"});
+        loadError = "settings.json not found at: " + jsonPath;
         return;
     }
 
@@ -72,10 +67,7 @@ void Settings::loadSettingsJson()
 
     if (doc.isNull() || !doc.isObject())
     {
-        // Fallback defaults if JSON is invalid
-        currentClientOptions << "-Xms256m" << "-Xmx512m" << "-Dfile.encoding=UTF-8";
-        currentServerOptions << "-Xms256m" << "-Xmx1g" << "-Dfile.encoding=UTF-8";
-        builds.append(Build{"official", "https://xmage.today/config.json"});
+        loadError = "settings.json is invalid: " + jsonPath;
         return;
     }
 
@@ -117,6 +109,7 @@ void Settings::loadSettingsJson()
     if (!currentExists && !builds.isEmpty())
     {
         currentBuildName = builds.first().name;
+        diskSettings.setValue("currentBuildName", currentBuildName);
     }
 }
 
