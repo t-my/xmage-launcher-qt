@@ -59,7 +59,7 @@ linux {
 }
 win32 {
     LIBS += -lzip -lbz2 -llzma -lmsi
-    QMAKE_POST_LINK += copy \"$$shell_path($$PWD/settings.json)\" .
+    QMAKE_POST_LINK += cp $$PWD/settings.json .
     QMAKE_CLEAN += settings.json
 }
 
