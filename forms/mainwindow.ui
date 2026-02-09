@@ -18,50 +18,6 @@
     <normaloff>:/icon-mage.png</normaloff>:/icon-mage.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="updateButton">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>530</x>
-      <y>570</y>
-      <width>121</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
-QPushButton:hover { background-color: #4d4d4d; }
-QPushButton:pressed { background-color: #2d2d2d; }
-QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
-    </property>
-    <property name="text">
-     <string>Check Updates</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="clientButton">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>50</x>
-      <y>570</y>
-      <width>111</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
-QPushButton:hover { background-color: #4d4d4d; }
-QPushButton:pressed { background-color: #2d2d2d; }
-QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
-    </property>
-    <property name="text">
-     <string>Launch Client</string>
-    </property>
-   </widget>
    <widget class="QLabel" name="logo">
     <property name="geometry">
      <rect>
@@ -98,28 +54,6 @@ color: white;</string>
      <bool>true</bool>
     </property>
    </widget>
-   <widget class="QPushButton" name="downloadButton">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>670</x>
-      <y>570</y>
-      <width>291</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
-QPushButton:hover { background-color: #4d4d4d; }
-QPushButton:pressed { background-color: #2d2d2d; }
-QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
-    </property>
-    <property name="text">
-     <string>Download XMage</string>
-    </property>
-   </widget>
    <widget class="QProgressBar" name="progressBar">
     <property name="enabled">
      <bool>true</bool>
@@ -139,62 +73,146 @@ QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
      <bool>true</bool>
     </property>
    </widget>
-   <widget class="QPushButton" name="serverButton">
+   <widget class="QWidget" name="buttonBar">
     <property name="geometry">
      <rect>
-      <x>210</x>
-      <y>570</y>
-      <width>111</width>
-      <height>41</height>
+      <x>10</x>
+      <y>560</y>
+      <width>978</width>
+      <height>51</height>
      </rect>
     </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+    <layout class="QHBoxLayout" name="buttonLayout">
+     <property name="spacing">
+      <number>8</number>
+     </property>
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QPushButton" name="clientButton">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>41</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
 QPushButton:hover { background-color: #4d4d4d; }
 QPushButton:pressed { background-color: #2d2d2d; }
 QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
-    </property>
-    <property name="text">
-     <string>Launch Server</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="clientServerButton">
-    <property name="geometry">
-     <rect>
-      <x>370</x>
-      <y>570</y>
-      <width>111</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+       </property>
+       <property name="text">
+        <string>Launch Client</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="serverButton">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>41</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
 QPushButton:hover { background-color: #4d4d4d; }
 QPushButton:pressed { background-color: #2d2d2d; }
 QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
-    </property>
-    <property name="text">
-     <string>Settings</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="decksButton">
-    <property name="geometry">
-     <rect>
-      <x>810</x>
-      <y>525</y>
-      <width>171</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+       </property>
+       <property name="text">
+        <string>Launch Server</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="clientServerButton">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>41</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
 QPushButton:hover { background-color: #4d4d4d; }
 QPushButton:pressed { background-color: #2d2d2d; }
 QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
-    </property>
-    <property name="text">
-     <string>Metagame Decks</string>
-    </property>
+       </property>
+       <property name="text">
+        <string>Builds</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="updateButton">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>41</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+QPushButton:hover { background-color: #4d4d4d; }
+QPushButton:pressed { background-color: #2d2d2d; }
+QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
+       </property>
+       <property name="text">
+        <string>Check Updates</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="downloadButton">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>41</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+QPushButton:hover { background-color: #4d4d4d; }
+QPushButton:pressed { background-color: #2d2d2d; }
+QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
+       </property>
+       <property name="text">
+        <string>Download XMage</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="decksButton">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>41</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px; }
+QPushButton:hover { background-color: #4d4d4d; }
+QPushButton:pressed { background-color: #2d2d2d; }
+QPushButton:disabled { background-color: #2a2a2a; color: #666; }</string>
+       </property>
+       <property name="text">
+        <string>Metagame Decks</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
  </widget>

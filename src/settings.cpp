@@ -1,28 +1,14 @@
 #include "settings.h"
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QFile>
 
 Settings::Settings()
 {
-    defaultClientOptions << "-Xms256m" << "-Xmx512m" << "-Dfile.encoding=UTF-8";
-    defaultServerOptions << "-Xms256m" << "-Xmx1g" << "-Dfile.encoding=UTF-8";
-    if (diskSettings.contains("clientOptions"))
-    {
-        currentClientOptions = diskSettings.value("clientOptions").toStringList();
-    }
-    else
-    {
-        currentClientOptions = defaultClientOptions;
-    }
-    if (diskSettings.contains("serverOptions"))
-    {
-        currentServerOptions = diskSettings.value("serverOptions").toStringList();
-    }
-    else
-    {
-        currentServerOptions = defaultServerOptions;
-    }
-
     computeBasePath();
-    loadBuilds();
+    currentBuildName = diskSettings.value("currentBuildName", "official").toString();
+    loadSettingsJson();
 }
 
 void Settings::computeBasePath()
@@ -55,45 +41,68 @@ void Settings::computeBasePath()
 #endif
 }
 
-void Settings::loadBuilds()
+void Settings::loadSettingsJson()
 {
-    // Load current build name
-    currentBuildName = diskSettings.value("currentBuildName", "official").toString();
+    // Determine path to settings.json (next to the executable / .app)
+    QString jsonPath;
+#if defined(Q_OS_MACOS)
+    QDir appDir(QCoreApplication::applicationDirPath());
+    appDir.cdUp(); // Contents
+    appDir.cdUp(); // .app
+    appDir.cdUp(); // folder containing .app
+    jsonPath = appDir.absolutePath() + "/settings.json";
+#else
+    jsonPath = QCoreApplication::applicationDirPath() + "/settings.json";
+#endif
 
-    // Load custom builds from settings
-    int buildCount = diskSettings.beginReadArray("builds");
-    for (int i = 0; i < buildCount; ++i)
+    QFile file(jsonPath);
+    if (!file.open(QIODevice::ReadOnly))
     {
-        diskSettings.setArrayIndex(i);
-        Build build;
-        build.name = diskSettings.value("name").toString();
-        build.url = diskSettings.value("url").toString();
-        if (!build.name.isEmpty() && !build.url.isEmpty())
+        // Fallback defaults if settings.json not found
+        currentClientOptions << "-Xms256m" << "-Xmx512m" << "-Dfile.encoding=UTF-8";
+        currentServerOptions << "-Xms256m" << "-Xmx1g" << "-Dfile.encoding=UTF-8";
+        builds.append(Build{"official", "https://xmage.today/config.json"});
+        builds.append(Build{"xdhs", "https://xdhs.net/xmage/config.json"});
+        builds.append(Build{"t-my", "https://t-my.github.io/mage/config.json"});
+        return;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    file.close();
+
+    if (doc.isNull() || !doc.isObject())
+    {
+        // Fallback defaults if JSON is invalid
+        currentClientOptions << "-Xms256m" << "-Xmx512m" << "-Dfile.encoding=UTF-8";
+        currentServerOptions << "-Xms256m" << "-Xmx1g" << "-Dfile.encoding=UTF-8";
+        builds.append(Build{"official", "https://xmage.today/config.json"});
+        return;
+    }
+
+    QJsonObject root = doc.object();
+
+    // Load builds
+    QJsonArray buildsArray = root.value("builds").toArray();
+    for (const QJsonValue &val : buildsArray)
+    {
+        QJsonObject obj = val.toObject();
+        QString name = obj.value("name").toString();
+        QString url = obj.value("url").toString();
+        if (!name.isEmpty() && !url.isEmpty())
         {
-            builds.append(build);
+            builds.append(Build{name, url});
         }
     }
-    diskSettings.endArray();
 
-    // Ensure default builds are always present
-    bool hasOfficial = false;
-    bool hasXdhs = false;
-    for (const Build &build : builds)
-    {
-        if (build.name == "official") hasOfficial = true;
-        if (build.name == "xdhs") hasXdhs = true;
-    }
-
-    if (!hasOfficial)
-    {
-        builds.prepend({"official", "https://xmage.today/config.json"});
-    }
-    if (!hasXdhs)
-    {
-        // Insert xdhs as second item if official is first
-        int insertPos = (builds.isEmpty() || builds.first().name != "official") ? 0 : 1;
-        builds.insert(insertPos, {"xdhs", "https://xdhs.net/xmage/config.json"});
-    }
+    // Load JVM options
+    QString clientOpts = root.value("clientOptions").toString();
+    QString serverOpts = root.value("serverOptions").toString();
+    currentClientOptions = clientOpts.isEmpty()
+        ? QStringList{"-Xms256m", "-Xmx512m", "-Dfile.encoding=UTF-8"}
+        : stringToList(clientOpts);
+    currentServerOptions = serverOpts.isEmpty()
+        ? QStringList{"-Xms256m", "-Xmx1g", "-Dfile.encoding=UTF-8"}
+        : stringToList(serverOpts);
 
     // Ensure current build exists in the list
     bool currentExists = false;
@@ -111,34 +120,10 @@ void Settings::loadBuilds()
     }
 }
 
-void Settings::saveBuilds()
-{
-    diskSettings.beginWriteArray("builds");
-    for (int i = 0; i < builds.size(); ++i)
-    {
-        diskSettings.setArrayIndex(i);
-        diskSettings.setValue("name", builds[i].name);
-        diskSettings.setValue("url", builds[i].url);
-    }
-    diskSettings.endArray();
-}
-
 void Settings::setJavaInstallLocation(QString location)
 {
     javaInstallLocation = location;
     diskSettings.setValue("javaInstallLocation", location);
-}
-
-void Settings::setClientOptions(QString options)
-{
-    currentClientOptions = stringToList(options);
-    diskSettings.setValue("clientOptions", currentClientOptions);
-}
-
-void Settings::setServerOptions(QString options)
-{
-    currentServerOptions = stringToList(options);
-    diskSettings.setValue("serverOptions", currentServerOptions);
 }
 
 QString Settings::getCurrentBuildUrl() const
@@ -174,50 +159,6 @@ void Settings::setCurrentBuild(const QString &buildName)
             return;
         }
     }
-}
-
-void Settings::addBuild(const QString &name, const QString &url)
-{
-    // Check if build with this name already exists
-    for (const Build &build : builds)
-    {
-        if (build.name == name)
-        {
-            return;
-        }
-    }
-    builds.append({name, url});
-    saveBuilds();
-}
-
-void Settings::removeBuild(const QString &name)
-{
-    // Don't allow removing default builds
-    if (isDefaultBuild(name))
-    {
-        return;
-    }
-
-    for (int i = 0; i < builds.size(); ++i)
-    {
-        if (builds[i].name == name)
-        {
-            builds.removeAt(i);
-            saveBuilds();
-
-            // If we removed the current build, switch to first available
-            if (currentBuildName == name && !builds.isEmpty())
-            {
-                setCurrentBuild(builds.first().name);
-            }
-            return;
-        }
-    }
-}
-
-bool Settings::isDefaultBuild(const QString &name) const
-{
-    return name == "official" || name == "xdhs";
 }
 
 QStringList Settings::stringToList(QString str)

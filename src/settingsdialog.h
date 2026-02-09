@@ -2,11 +2,6 @@
 #define SETTINGSDIALOG_H
 
 #include <QDialog>
-#include <QMessageBox>
-#include <QVBoxLayout>
-#include <QLabel>
-#include <QLineEdit>
-#include <QDialogButtonBox>
 #include "settings.h"
 
 namespace Ui {
@@ -23,11 +18,6 @@ public:
 
 public slots:
     void accept() override;
-
-private slots:
-    void on_resetButton_clicked();
-    void on_addUrlButton_clicked();
-    void on_removeUrlButton_clicked();
 
 private:
     Ui::SettingsDialog *ui;

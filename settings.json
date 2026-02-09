@@ -1,0 +1,9 @@
+{
+  "builds": [
+    { "name": "official", "url": "https://xmage.today/config.json" },
+    { "name": "advanced", "url": "https://t-my.github.io/mage/config.json" },
+    { "name": "xdhs",     "url": "https://xdhs.net/xmage/config.json" }
+  ],
+  "clientOptions": "-Xms256m -Xmx512m -Dfile.encoding=UTF-8",
+  "serverOptions": "-Xms256m -Xmx1g -Dfile.encoding=UTF-8"
+}
