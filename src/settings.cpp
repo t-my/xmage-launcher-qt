@@ -43,17 +43,8 @@ void Settings::computeBasePath()
 
 void Settings::loadSettingsJson()
 {
-    // Determine path to settings.json (next to the executable / .app)
-    QString jsonPath;
-#if defined(Q_OS_MACOS)
-    QDir appDir(QCoreApplication::applicationDirPath());
-    appDir.cdUp(); // Contents
-    appDir.cdUp(); // .app
-    appDir.cdUp(); // folder containing .app
-    jsonPath = appDir.absolutePath() + "/settings.json";
-#else
-    jsonPath = QCoreApplication::applicationDirPath() + "/settings.json";
-#endif
+    // Determine path to settings.json (next to the executable on all platforms)
+    QString jsonPath = QCoreApplication::applicationDirPath() + "/settings.json";
 
     QFile file(jsonPath);
     if (!file.open(QIODevice::ReadOnly))

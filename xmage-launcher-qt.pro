@@ -31,10 +31,7 @@ FORMS += \
     forms/mainwindow.ui \
     forms/settingsdialog.ui
 
-# Default rules for deployment.
-qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
-!isEmpty(target.path): INSTALLS += target
+# Deployment rules disabled — app is distributed as a zip/dmg, not installed to /opt
 
 RESOURCES += \
     resources/resources.qrc
@@ -44,13 +41,13 @@ macx {
     LIBS += -L/opt/homebrew/opt/libzip/lib -lzip
     ICON = resources/icon-mage.icns
 
-    # Copy settings.json next to .app, deploy Qt frameworks, and sign
-    QMAKE_POST_LINK += cp $$PWD/settings.json . && \
+    # Copy settings.json inside .app bundle, deploy Qt frameworks, and sign
+    QMAKE_POST_LINK += cp $$PWD/settings.json $${TARGET}.app/Contents/MacOS/ && \
         macdeployqt $${TARGET}.app && \
         codesign --force --deep --sign - $${TARGET}.app
 
     # Clean up .app bundle on make clean
-    QMAKE_CLEAN += -r $${TARGET}.app settings.json
+    QMAKE_CLEAN += -r $${TARGET}.app
 }
 linux {
     LIBS += -lzip
