@@ -68,8 +68,6 @@ private:
     Ui::MainWindow *ui;
     QLabel *background;
     Settings *settings;
-    QPlainTextEdit *clientConsole;
-    QPlainTextEdit *serverConsole;
     XMageProcess *clientProcess = nullptr;
     XMageProcess *serverProcess = nullptr;
 

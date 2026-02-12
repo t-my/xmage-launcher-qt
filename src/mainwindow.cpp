@@ -10,8 +10,6 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
     , background(new QLabel(this))
     , settings(new Settings)
-    , clientConsole(new QPlainTextEdit)
-    , serverConsole(new QPlainTextEdit)
 {
     ui->setupUi(this);
     ui->progressBar->hide();
@@ -22,16 +20,6 @@ MainWindow::MainWindow(QWidget *parent)
     background->setGeometry(0, 0, this->size().width(), this->size().height());
     background->setPixmap(backgroundImage.scaled(background->size()));
     background->lower();
-    clientConsole->setWindowTitle("XMage Client Console");
-    clientConsole->setWindowIcon(this->windowIcon());
-    clientConsole->setGeometry(0, 0, 860, 480);
-    clientConsole->setStyleSheet("background-color:black; color:white;");
-    clientConsole->setReadOnly(true);
-    serverConsole->setWindowTitle("XMage Server Console");
-    serverConsole->setWindowIcon(this->windowIcon());
-    serverConsole->setGeometry(0, 0, 860, 480);
-    serverConsole->setStyleSheet("background-color:black; color:white;");
-    serverConsole->setReadOnly(true);
 
     // Log startup info and check launch readiness
     if (!settings->loadError.isEmpty())
@@ -376,8 +364,7 @@ void MainWindow::doLaunchClient()
     log("  Build: " + settings->currentBuildName);
     log("  Client dir: " + clientDir);
     ui->clientButton->setText("Stop Client");
-    clientConsole->show();
-    clientProcess = new XMageProcess(clientConsole);
+    clientProcess = new XMageProcess(ui->log);
     connect(clientProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &MainWindow::client_finished);
     clientProcess->setWorkingDirectory(clientDir);
     QStringList arguments = settings->currentClientOptions;
@@ -407,8 +394,7 @@ void MainWindow::doLaunchServer()
     log("  Build: " + settings->currentBuildName);
     log("  Server dir: " + serverDir);
     ui->serverButton->setText("Stop Server");
-    serverConsole->show();
-    serverProcess = new XMageProcess(serverConsole);
+    serverProcess = new XMageProcess(ui->log);
     connect(serverProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &MainWindow::server_finished);
     serverProcess->setWorkingDirectory(serverDir);
     QStringList arguments = settings->currentServerOptions;
@@ -444,8 +430,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
     {
         stopServer();
     }
-    delete clientConsole;
-    delete serverConsole;
     event->accept();
 }
 
