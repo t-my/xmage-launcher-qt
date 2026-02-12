@@ -17,6 +17,7 @@
 #include <QProcess>
 #include <QFile>
 #include <QDir>
+#include <functional>
 #include "settingsdialog.h"
 #include "settings.h"
 #include "xmageprocess.h"
@@ -43,13 +44,11 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private slots:
-    void on_updateButton_clicked();
     void on_clientButton_clicked();
     void on_clientServerButton_clicked();
     void on_serverButton_clicked();
-    void on_downloadButton_clicked();
     void on_actionSettings_triggered();
-    void on_decksButton_clicked();
+    void client_finished();
     void server_finished();
 
     // Java download slots
@@ -71,6 +70,7 @@ private:
     Settings *settings;
     QPlainTextEdit *clientConsole;
     QPlainTextEdit *serverConsole;
+    XMageProcess *clientProcess = nullptr;
     XMageProcess *serverProcess = nullptr;
 
     // Java download members
@@ -80,7 +80,6 @@ private:
     QString javaBaseUrl;
     QString javaVersion;
     bool javaDownloading = false;
-    bool downloadXmageAfterJava = false;  // Flag to continue with XMage download after Java
 
     // Config fetch members
     QNetworkAccessManager *configNetworkManager = nullptr;
@@ -92,11 +91,23 @@ private:
     QSaveFile *decksSaveFile = nullptr;
     bool decksDownloading = false;
 
-    bool validateJavaSettings();
+    // Launch preparation chain
+    std::function<void()> pendingLaunch;
+    bool preparing = false;
+
+    void prepareLaunch(std::function<void()> onReady);
+    void prepareStepConfig();
+    void prepareStepJava();
+    void prepareStepXmage();
+    void prepareStepDecks();
+    void prepareFailed(const QString &error);
+    void setButtonsEnabled(bool enabled);
+
     bool findClientJar(QString *jar);
     bool findServerJar(QString *jar);
-    void launchClient();
-    void launchServer();
+    void doLaunchClient();
+    void doLaunchServer();
+    void stopClient();
     void stopServer();
 
     // Java download methods
