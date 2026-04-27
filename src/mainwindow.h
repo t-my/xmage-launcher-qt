@@ -50,6 +50,7 @@ private slots:
     void on_actionSettings_triggered();
     void client_finished();
     void server_finished();
+    void openLocalPath(const QString &path);
 
     // Java download slots
     void onJavaDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
@@ -119,6 +120,7 @@ private:
     // Config methods
     void fetchConfig();
     void updateLaunchReadiness();
+    void updateBuildInfo();
     bool loadCachedConfig(QJsonObject *config);
 };
 #endif // MAINWINDOW_H

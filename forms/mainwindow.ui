@@ -37,6 +37,211 @@
      <bool>true</bool>
     </property>
    </widget>
+   <widget class="QFrame" name="infoPanel">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>140</y>
+      <width>340</width>
+      <height>371</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QFrame#infoPanel { background-color: rgba(0, 0, 0, 200); border-radius: 4px; }
+QLabel { background: transparent; }</string>
+    </property>
+    <layout class="QVBoxLayout" name="infoLayout">
+     <property name="spacing">
+      <number>4</number>
+     </property>
+     <property name="leftMargin">
+      <number>16</number>
+     </property>
+     <property name="topMargin">
+      <number>16</number>
+     </property>
+     <property name="rightMargin">
+      <number>16</number>
+     </property>
+     <property name="bottomMargin">
+      <number>16</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="buildSectionLabel">
+       <property name="text">
+        <string>CURRENT BUILD</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: #888; font-size: 11px; font-weight: bold; letter-spacing: 1px;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="buildNameLabel">
+       <property name="text">
+        <string>—</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: white; font-size: 22px; font-weight: bold;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="infoSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="configSectionLabel">
+       <property name="text">
+        <string>CONFIG URL</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: #888; font-size: 11px; font-weight: bold; letter-spacing: 1px;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="configUrlLabel">
+       <property name="text">
+        <string>—</string>
+       </property>
+       <property name="textFormat">
+        <enum>Qt::RichText</enum>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignTop|Qt::AlignLeft</set>
+       </property>
+       <property name="openExternalLinks">
+        <bool>true</bool>
+       </property>
+       <property name="cursor">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="toolTip">
+        <string>Click to open in browser</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="infoSpacer2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="folderSectionLabel">
+       <property name="text">
+        <string>WORKING DIRECTORY</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: #888; font-size: 11px; font-weight: bold; letter-spacing: 1px;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="folderPathLabel">
+       <property name="text">
+        <string>—</string>
+       </property>
+       <property name="textFormat">
+        <enum>Qt::RichText</enum>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignTop|Qt::AlignLeft</set>
+       </property>
+       <property name="cursor">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="toolTip">
+        <string>Click to open folder</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="infoSpacer3">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="decksSectionLabel">
+       <property name="text">
+        <string>DECKS</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: #888; font-size: 11px; font-weight: bold; letter-spacing: 1px;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="decksPathLabel">
+       <property name="text">
+        <string>—</string>
+       </property>
+       <property name="textFormat">
+        <enum>Qt::RichText</enum>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignTop|Qt::AlignLeft</set>
+       </property>
+       <property name="cursor">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="toolTip">
+        <string>Click to open folder</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="infoSpacerEnd">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </widget>
    <widget class="QPlainTextEdit" name="log">
     <property name="geometry">
      <rect>

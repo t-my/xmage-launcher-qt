@@ -7,8 +7,46 @@
 Settings::Settings()
 {
     computeBasePath();
-    currentBuildName = diskSettings.value("currentBuildName", "official").toString();
+    loadUserSettings();
     loadSettingsJson();
+}
+
+void Settings::loadUserSettings()
+{
+    currentBuildName = "official";
+
+    QFile file(basePath + "/user-settings.json");
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        return;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    file.close();
+
+    if (doc.isNull() || !doc.isObject())
+    {
+        return;
+    }
+
+    QJsonObject root = doc.object();
+    currentBuildName = root.value("currentBuildName").toString("official");
+    javaInstallLocation = root.value("javaInstallLocation").toString();
+}
+
+void Settings::saveUserSettings()
+{
+    QJsonObject root;
+    root.insert("currentBuildName", currentBuildName);
+    root.insert("javaInstallLocation", javaInstallLocation);
+
+    QDir().mkpath(basePath);
+    QFile file(basePath + "/user-settings.json");
+    if (file.open(QIODevice::WriteOnly))
+    {
+        file.write(QJsonDocument(root).toJson());
+        file.close();
+    }
 }
 
 void Settings::computeBasePath()
@@ -100,14 +138,14 @@ void Settings::loadSettingsJson()
     if (!currentExists && !builds.isEmpty())
     {
         currentBuildName = builds.first().name;
-        diskSettings.setValue("currentBuildName", currentBuildName);
+        saveUserSettings();
     }
 }
 
 void Settings::setJavaInstallLocation(QString location)
 {
     javaInstallLocation = location;
-    diskSettings.setValue("javaInstallLocation", location);
+    saveUserSettings();
 }
 
 QString Settings::getCurrentBuildUrl() const
@@ -139,7 +177,7 @@ void Settings::setCurrentBuild(const QString &buildName)
         if (build.name == buildName)
         {
             currentBuildName = buildName;
-            diskSettings.setValue("currentBuildName", buildName);
+            saveUserSettings();
             return;
         }
     }

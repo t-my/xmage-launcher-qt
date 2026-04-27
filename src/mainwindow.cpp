@@ -4,6 +4,8 @@
 #include "unzipthread.h"
 #include "zipextractthread.h"
 #include <QCoreApplication>
+#include <QDesktopServices>
+#include <QUrl>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -21,12 +23,16 @@ MainWindow::MainWindow(QWidget *parent)
     background->setPixmap(backgroundImage.scaled(background->size()));
     background->lower();
 
+    connect(ui->folderPathLabel, &QLabel::linkActivated, this, &MainWindow::openLocalPath);
+    connect(ui->decksPathLabel, &QLabel::linkActivated, this, &MainWindow::openLocalPath);
+
     // Log startup info and check launch readiness
     if (!settings->loadError.isEmpty())
     {
         log("ERROR: " + settings->loadError);
         QMessageBox::critical(this, "Configuration Error", settings->loadError);
     }
+    updateBuildInfo();
     updateLaunchReadiness();
 }
 
@@ -338,6 +344,7 @@ void MainWindow::on_actionSettings_triggered()
     SettingsDialog *settingsDialog = new SettingsDialog(settings, this);
     connect(settingsDialog, &QDialog::accepted, this, [this]() {
         log("Build changed to: " + settings->currentBuildName);
+        updateBuildInfo();
         updateLaunchReadiness();
     });
     settingsDialog->open();
@@ -962,6 +969,39 @@ void MainWindow::fetchConfig()
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
     configNetworkManager->get(request);
+}
+
+void MainWindow::updateBuildInfo()
+{
+    ui->buildNameLabel->setText(settings->currentBuildName.toHtmlEscaped());
+
+    QString configUrl = settings->getCurrentBuildUrl();
+    if (configUrl.isEmpty())
+    {
+        ui->configUrlLabel->setText("—");
+    }
+    else
+    {
+        ui->configUrlLabel->setText(
+            QString("<a href=\"%1\" style=\"color:#7cb1ff;\">%1</a>")
+                .arg(configUrl.toHtmlEscaped()));
+    }
+
+    QString workingDir = settings->basePath;
+    ui->folderPathLabel->setText(
+        QString("<a href=\"%1\" style=\"color:#7cb1ff;\">%1</a>")
+            .arg(workingDir.toHtmlEscaped()));
+
+    QString decksDir = settings->basePath + "/decks";
+    ui->decksPathLabel->setText(
+        QString("<a href=\"%1\" style=\"color:#7cb1ff;\">%1</a>")
+            .arg(decksDir.toHtmlEscaped()));
+}
+
+void MainWindow::openLocalPath(const QString &path)
+{
+    QDir().mkpath(path);
+    QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 }
 
 void MainWindow::updateLaunchReadiness()

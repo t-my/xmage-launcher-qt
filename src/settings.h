@@ -3,7 +3,6 @@
 
 #include <QString>
 #include <QStringList>
-#include <QSettings>
 #include <QList>
 #include <QDir>
 #include <QCoreApplication>
@@ -19,8 +18,7 @@ class Settings
 {
 public:
     Settings();
-    QSettings diskSettings { "xmage", "xmage-launcher-qt" };
-    QString javaInstallLocation { diskSettings.value("javaInstallLocation").toString() };
+    QString javaInstallLocation;
     QList<Build> builds;
     QString currentBuildName;
     QStringList currentClientOptions;
@@ -38,6 +36,8 @@ public:
 
 private:
     void loadSettingsJson();
+    void loadUserSettings();
+    void saveUserSettings();
     void computeBasePath();
     QStringList stringToList(QString str);
 };
