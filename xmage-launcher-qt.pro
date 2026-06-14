@@ -4,6 +4,15 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++11
 
+# Executable metadata. On Windows these populate the PE VERSIONINFO resource;
+# an unsigned binary with no version/company info looks more suspicious to AV
+# heuristics, so we always embed proper provenance.
+VERSION = 1.0.0
+QMAKE_TARGET_COMPANY     = "XMage"
+QMAKE_TARGET_PRODUCT     = "XMage Launcher"
+QMAKE_TARGET_DESCRIPTION = "Launcher for XMage (Magic: The Gathering)"
+QMAKE_TARGET_COPYRIGHT   = "GPL-3.0 — github.com/t-my/xmage-launcher-qt"
+
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
@@ -55,6 +64,7 @@ linux {
     QMAKE_CLEAN += settings.json
 }
 win32 {
+    RC_ICONS = resources/icon-mage.ico
     LIBS += -lzip -lbz2 -llzma -lmsi
     QMAKE_POST_LINK += cp $$PWD/settings.json .
     QMAKE_CLEAN += settings.json

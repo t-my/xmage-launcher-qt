@@ -34,7 +34,8 @@ jobs:
           cd build
           qmake6 ..
           make -j$(nproc)
-          strip release/xmage-launcher-qt.exe
+          # NOTE: do not strip the Windows exe — stripped MinGW binaries skew
+          # "malicious" in AV ML heuristics (e.g. Wacapew.A!ml false positives).
 
       - name: Deploy Qt libraries
         run: |

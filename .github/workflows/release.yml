@@ -34,7 +34,8 @@ jobs:
           cd build
           qmake6 ..
           make -j$(nproc)
-          strip release/xmage-launcher-qt.exe
+          # NOTE: do not strip the Windows exe — stripped MinGW binaries skew
+          # "malicious" in AV ML heuristics (e.g. Wacapew.A!ml false positives).
 
       - name: Deploy Qt libraries
         run: |
@@ -272,6 +273,11 @@ jobs:
           mv artifacts/macos.zip/macos.zip .
           mv artifacts/linux.zip/linux.zip .
 
+      - name: Generate SHA-256 checksums
+        run: |
+          sha256sum windows.zip macos.zip linux.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
@@ -279,3 +285,4 @@ jobs:
             windows.zip
             macos.zip
             linux.zip
+            SHA256SUMS.txt
