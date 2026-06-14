@@ -2,6 +2,7 @@
   "builds": [
     { "name": "official-with-image-downloader", "url": "https://t-my.github.io/mage/config.json" },
     { "name": "official", "url": "https://xmage.today/config.json" },
+    { "name": "weekly",   "url": "https://grath.github.io/config.json" },
     { "name": "xdhs",     "url": "https://xdhs.net/xmage/config.json" }
   ],
   "clientOptions": "-Xms256m -Xmx2g -Dfile.encoding=UTF-8",
