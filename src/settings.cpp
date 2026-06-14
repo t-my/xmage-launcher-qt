@@ -13,7 +13,9 @@ Settings::Settings()
 
 void Settings::loadUserSettings()
 {
-    currentBuildName = "official";
+    // Empty means "no explicit choice yet" — loadSettingsJson() will fall back
+    // to the first build listed in settings.json (see end of that function).
+    currentBuildName = "";
 
     QFile file(basePath + "/user-settings.json");
     if (!file.open(QIODevice::ReadOnly))
@@ -30,7 +32,7 @@ void Settings::loadUserSettings()
     }
 
     QJsonObject root = doc.object();
-    currentBuildName = root.value("currentBuildName").toString("official");
+    currentBuildName = root.value("currentBuildName").toString("");
     javaInstallLocation = root.value("javaInstallLocation").toString();
 }
 
