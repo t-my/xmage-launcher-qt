@@ -7,7 +7,7 @@ CONFIG += c++11
 # Executable metadata. On Windows these populate the PE VERSIONINFO resource;
 # an unsigned binary with no version/company info looks more suspicious to AV
 # heuristics, so we always embed proper provenance.
-VERSION = 1.0.0
+VERSION = 0.2.0
 QMAKE_TARGET_COMPANY     = "XMage"
 QMAKE_TARGET_PRODUCT     = "XMage Launcher"
 QMAKE_TARGET_DESCRIPTION = "Launcher for XMage (Magic: The Gathering)"
